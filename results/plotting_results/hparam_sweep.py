@@ -212,8 +212,6 @@ def plot_single_sweep(data: SweepData, envs: List[str], out_path: Path,
         ax.set_title(TRANSLATIONS.get(env, env))
         ax.grid(True, linestyle="--", alpha=0.4)
 
-    fig.suptitle(f"{TRANSLATIONS.get(data.algo, data.algo)}: sweep over "
-                 f"{TRANSLATIONS.get(data.hparam, data.hparam)}")
     labels = list(handles)
     fig.tight_layout()
     fig.legend(list(handles.values()), labels, loc="upper center", bbox_to_anchor=(0.5, 0.0),
@@ -269,7 +267,6 @@ def plot_comparison(hparam: str, sweeps: Dict[Tuple[str, str], SweepData], envs:
                 ax.set_title(TRANSLATIONS.get(env, env))
             ax.grid(True, linestyle="--", alpha=0.4)
 
-    fig.suptitle(f"Sweep over {TRANSLATIONS.get(hparam, hparam)}")
     labels = [TRANSLATIONS.get(k, "Threshold" if k == "threshold" else k) for k in handles]
     rows = legend_rows(len(algos))
     fig.tight_layout()
