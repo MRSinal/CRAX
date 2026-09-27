@@ -132,7 +132,7 @@ def plot_metrics(data: Dict[Tuple[str, str, str], List[pd.DataFrame]], args: arg
     legend_handles: Dict[str, plt.Line2D] = {}
 
     for env_i, env in enumerate(envs):
-        env_title = env.replace("_", " ").title()
+        env_title = TRANSLATIONS.get(env, env.replace("_", " ").title())
 
         for metric_i, metric in enumerate(metrics):
             ax = get_ax(env_i, metric_i)
