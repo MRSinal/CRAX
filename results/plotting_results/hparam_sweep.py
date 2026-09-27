@@ -15,7 +15,6 @@ from results import cli
 from results.common import (BASELINES_COLORS, RL_CORE_HPARAMS, RL_SWEEP_SPEC,
                             SAFETY_SWEEP_SPEC, TRANSLATIONS, legend_ncol, legend_rows,
                             results_path, set_mpl_style)
-from results.plotting_results.safety_param_sweep import discover_values
 from results.plotting_results.seed_variance import ci95, load_final_value
 
 # The two hyperparameter groups, keyed the way the rest of the sweep scripts key them.
@@ -25,6 +24,9 @@ GROUP_LABELS: Dict[str, str] = {
     "safety": "Safety-specific hyperparameters",
 }
 GROUP_FIG_PREFIX: Dict[str, str] = {"rl": "stage1_sweep", "safety": "hparam_sweep"}
+ALL_SWEEP_ALGOS: List[str] = list(dict.fromkeys(a for spec in PARAM_GROUPS.values() for a in spec))
+ALL_SWEEP_HPARAMS: List[str] = list(dict.fromkeys(
+    h for spec in PARAM_GROUPS.values() for hparams in spec.values() for h in hparams))
 
 # Algorithm order requested for the cross-algorithm figure and the heatmap rows.
 ALGO_ORDER: List[str] = [
@@ -37,7 +39,7 @@ COST_COLOR = "tab:red"
 THRESHOLD_COLOR = "darkred"
 MISSING_CELL_COLOR = "0.85"
 COST_COLOR_PERCENTILE = 85
-PANEL_W, PANEL_H = 4.5, 4.0
+PANEL_W, PANEL_H = 4.5, 3.5
 COMPARISON_PANEL_H = 3.6
 
 
@@ -98,6 +100,16 @@ def sort_values(values: Sequence[str]) -> List[str]:
         return sorted(values, key=lambda v: float(v))
     except ValueError:
         return sorted(values)
+
+
+def discover_values(base: Path, env: str, level: int, algo: str, hparam: str) -> List[str]:
+    """Folder-name value suffixes of `<hparam>_<value>` directories for one (env, algo)."""
+    algo_dir = base / env / f"level_{level}" / algo
+    if not algo_dir.is_dir():
+        return []
+    prefix = f"{hparam}_"
+    return sort_values([p.name[len(prefix):] for p in algo_dir.iterdir()
+                        if p.is_dir() and p.name.startswith(prefix)])
 
 
 def discover_seeds(value_dir: Path) -> List[int]:
@@ -194,7 +206,7 @@ def plot_single_sweep(data: SweepData, envs: List[str], out_path: Path,
         r_line = ax.errorbar(x, reward_means, yerr=reward_cis, marker="o", color=REWARD_COLOR,
                              label="Reward", capsize=3)
         c_line = ax_cost.errorbar(x, cost_means, yerr=cost_cis, marker="s", color=COST_COLOR,
-                                  linestyle="--", label="Cost", capsize=3)
+                                  label="Cost", capsize=3)
         t_line = add_threshold_line(ax_cost, threshold)
 
         handles.setdefault("Reward", r_line)
@@ -500,7 +512,11 @@ def main(args: argparse.Namespace) -> None:
     sweeps: Dict[Tuple[str, str], SweepData] = {}
     for group, spec in PARAM_GROUPS.items():
         for algo, hparams in spec.items():
+            if args.algos is not None and algo not in args.algos:
+                continue
             for hparam in hparams:
+                if args.hparams is not None and hparam not in args.hparams:
+                    continue
                 data = load_sweep(base, args.envs, args.level, algo, hparam, group,
                                   args.seeds, args.last_frac, args.ci_method, skips)
                 if data is not None:
@@ -553,6 +569,12 @@ def build_args() -> argparse.ArgumentParser:
     )
     p.add_argument("--seeds", type=int, nargs="+", default=None,
                    help="Seeds to include (default: every seed present on disk)")
+    p.add_argument("--algos", type=str, nargs="+", default=None, choices=ALL_SWEEP_ALGOS,
+                   help="Only load these algorithms' sweeps (default: all). Also narrows the "
+                        "comparison figure, heatmaps and tables.")
+    p.add_argument("--hparams", type=str, nargs="+", default=None, choices=ALL_SWEEP_HPARAMS,
+                   help="Only load sweeps over these hyperparameters (default: all). Also narrows "
+                        "the comparison figure, heatmaps and tables.")
     p.add_argument("--compare_param", type=str, default="entropy_cost",
                    help="Hyperparameter for the cross-algorithm comparison figure")
     p.add_argument("--cost_env_agg", type=str, default="max", choices=["max", "mean"],

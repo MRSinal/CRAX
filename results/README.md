@@ -87,8 +87,7 @@ python -m results.download.safety_param_sweep --project my-crax-project
 | `seed_variance_curriculum_transfer.py` | The same seed-count analysis for the curriculum and transfer regimes. |
 | `curriculum_transfer.py` | Normal vs. curriculum vs. transfer: stitched training curves across stages, and final level-3 comparison bars. |
 | `safety_bounds.py` | Effect of the cost budget (`--bounds`, default 15/25/35) on reward and cost. |
-| `safety_param_sweep.py` | Per-(algo, hyperparameter) final reward/cost across swept values, one table and figure each. |
-| `rl_param_sweep.py` | The same, for the core PPO hyperparameters. |
+| `hparam_sweep.py` | Hyperparameter sweeps (core PPO `RL_SWEEP_SPEC` and safety-specific `SAFETY_SWEEP_SPEC`): one figure per (algo, hyperparameter), a cross-algorithm comparison (`--compare_param`), sensitivity heatmaps and LaTeX tables. Narrow with `--algos` / `--hparams`, pick outputs with `--outputs`. |
 | `crax_vs_sg.py` | CRAX vs. OmniSafe + Safety-Gymnasium training curves on ant-velocity (PPOLag), mean ± 95% CI. |
 | `throughput_comparison.py` | Throughput (SPS) and scaling efficiency vs. Safety-Gymnasium, from `data/performance/`. |
 
