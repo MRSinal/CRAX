@@ -123,6 +123,7 @@ def add_shared_training_args(parser: argparse.ArgumentParser) -> argparse.Argume
     parser.add_argument("--reward_scaling", type=float, default=0.1, help="Reward scaling")
     parser.add_argument("--gae_lambda", type=float, default=0.95, help="GAE lambda")
     parser.add_argument("--clipping_epsilon", type=float, default=0.3, help="PPO clipping epsilon")
+    parser.add_argument("--max_grad_norm", type=float, default=None, help="Gradient norm clip applied before Adam (PPO family; default: no clipping)")
     parser.add_argument("--normalize_observations", type=bool_type, nargs="?", const=True, default=True,
                         help="Normalize observations (true/false)")
 
