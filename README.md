@@ -145,6 +145,16 @@ for _ in range(300):
 
 See [`examples/README.md`](examples/README.md) for the full list of examples.
 
+### Playing CRAX
+
+Point-agent environments can be played with a keyboard (requires `pygame`):
+
+```bash
+python -m crax.play --env_name safe_goal_point --level 2
+```
+
+W/S thrust, A/D turn, C cycles the camera, R resets, Space pauses, Esc quits.
+
 ### Training from the command line
 
 The training entry points live in the `training/` package and are run as modules:
