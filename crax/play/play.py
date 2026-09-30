@@ -5,10 +5,13 @@ The environment is stepped with the regular (jitted) JAX `reset`/`step`, the
 resulting MJX state is copied into a CPU `MjData` and rendered with MuJoCo's
 offscreen renderer into a pygame window.
 
+Supported environments (point agent):
+    safe_goal_point, safe_push_point, safe_button_point, safe_circle_point
+
 Usage:
     python -m crax.play
     python -m crax.play --env_name safe_push_point --level 3
-    python -m crax.play --camera fixedfar --scale 1.5
+    python -m crax.play --camera fixedfar --width 1200 --height 900
 
 Controls (point agent):
     W / Up       thrust forward        S / Down     thrust backward
