@@ -213,7 +213,7 @@ def add_shared_training_args(parser: argparse.ArgumentParser) -> argparse.Argume
                         help="'pixels' (pixels only) or 'pixels+state' (pixels + state vector)")
     parser.add_argument("--vision_limb_colors", action="store_true",
                         help="Give each of the agent's limbs a distinct colour for training")
-    parser.add_argument("--vision_frame_stack", type=int, default=3, help="Number of frames to stack channel-wise")
+    parser.add_argument("--vision_frame_stack", type=int, default=1, help="Number of frames to stack channel-wise")
     parser.add_argument("--vision_augment", type=bool_type, nargs="?", const=True, default=True,
                         help="DrQ-style random translation of pixel observations during SGD.")
     parser.add_argument("--vision_independent_encoders", action="store_true",
