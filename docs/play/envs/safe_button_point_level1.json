@@ -1,0 +1,248 @@
+{
+ "env_name": "safe_button_point",
+ "task": "button",
+ "level": 1,
+ "mujoco_version": "3.11.0",
+ "n_frames": 4,
+ "dt": 0.07999999821186066,
+ "episode_length": 1000,
+ "agent_body": 1,
+ "agent_geom_ids": [
+  1,
+  2
+ ],
+ "healthy_z_range": [
+  0.05,
+  0.3
+ ],
+ "reset_noise_scale": 0.005,
+ "placement_extents": [
+  -2.0,
+  -2.0,
+  2.0,
+  2.0
+ ],
+ "placement_margin": 0.01,
+ "max_placement_attempts": 100,
+ "agent_keepout": 0.16,
+ "proximity_cost_scaler": 2.0,
+ "collision_cost": 3.0,
+ "num_movable_hazards": 8,
+ "hazards": [
+  {
+   "type": "cube",
+   "geom_id": 3,
+   "mocap_id": 0,
+   "size": [
+    0.2
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.2828427255153656,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.20000000298023224,
+    0.20000000298023224
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 4,
+   "mocap_id": 1,
+   "size": [
+    0.2
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.2828427255153656,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.20000000298023224,
+    0.20000000298023224
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 5,
+   "mocap_id": 2,
+   "size": [
+    0.2
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.2828427255153656,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.20000000298023224,
+    0.20000000298023224
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 6,
+   "mocap_id": 3,
+   "size": [
+    0.2
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.2828427255153656,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.20000000298023224,
+    0.20000000298023224
+   ]
+  },
+  {
+   "type": "gremlin",
+   "geom_id": 7,
+   "mocap_id": 4,
+   "size": [
+    0.1
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.35,
+   "keepout": 0.49142134189605713,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.49142134189605713
+   ]
+  },
+  {
+   "type": "gremlin",
+   "geom_id": 8,
+   "mocap_id": 5,
+   "size": [
+    0.1
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.35,
+   "keepout": 0.49142134189605713,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.49142134189605713
+   ]
+  },
+  {
+   "type": "gremlin",
+   "geom_id": 9,
+   "mocap_id": 6,
+   "size": [
+    0.1
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.35,
+   "keepout": 0.49142134189605713,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.49142134189605713
+   ]
+  },
+  {
+   "type": "gremlin",
+   "geom_id": 10,
+   "mocap_id": 7,
+   "size": [
+    0.1
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.35,
+   "keepout": 0.49142134189605713,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.49142134189605713
+   ]
+  }
+ ],
+ "cameras": [
+  "fixedfar",
+  "track",
+  "vision",
+  "vision_back"
+ ],
+ "hazard_is_rect": [
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  false
+ ],
+ "hazard_half_extents": [
+  [
+   0.20000000298023224,
+   0.20000000298023224
+  ],
+  [
+   0.20000000298023224,
+   0.20000000298023224
+  ],
+  [
+   0.20000000298023224,
+   0.20000000298023224
+  ],
+  [
+   0.20000000298023224,
+   0.20000000298023224
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ]
+ ],
+ "hazard_radii": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.49142134189605713,
+  0.49142134189605713,
+  0.49142134189605713,
+  0.49142134189605713
+ ],
+ "button_mocap_ids": [
+  8,
+  9,
+  10,
+  11
+ ],
+ "button_geom_ids": [
+  11,
+  12,
+  13,
+  14
+ ],
+ "goal_marker_mocap_id": 12,
+ "button_height": 0.1,
+ "button_keepout": 0.2,
+ "marker_z": 0.25,
+ "buttons_constrained": true,
+ "resampling_delay": 10,
+ "continue_goal": true,
+ "max_layout_attempts": 1000,
+ "reward_goal": 1.0,
+ "reward_distance": 1.0,
+ "wrong_button_cost": 1.0
+}

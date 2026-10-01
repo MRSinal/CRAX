@@ -1,0 +1,122 @@
+{
+ "env_name": "safe_circle_point",
+ "task": "circle",
+ "level": 3,
+ "mujoco_version": "3.11.0",
+ "n_frames": 5,
+ "dt": 0.09999999403953552,
+ "episode_length": 1000,
+ "agent_body": 1,
+ "agent_geom_ids": [
+  1,
+  2
+ ],
+ "healthy_z_range": [
+  0.05,
+  0.5
+ ],
+ "reset_noise_scale": 0.1,
+ "placement_extents": [
+  -3.0,
+  -3.0,
+  3.0,
+  3.0
+ ],
+ "placement_margin": 0.01,
+ "max_placement_attempts": 100,
+ "agent_keepout": 0.1,
+ "proximity_cost_scaler": 3.0,
+ "collision_cost": 1.0,
+ "num_movable_hazards": 2,
+ "hazards": [
+  {
+   "type": "cylinder",
+   "geom_id": 8,
+   "mocap_id": 5,
+   "size": [
+    0.2
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.2,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.20000000298023224
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 9,
+   "mocap_id": 6,
+   "size": [
+    0.2
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.2,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.20000000298023224
+   ]
+  }
+ ],
+ "cameras": [
+  "fixedfar",
+  "track",
+  "vision",
+  "vision_back"
+ ],
+ "goal_mocap_ids": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "goal_positions": [
+  [
+   0.0,
+   0.0,
+   0.009999999776482582
+  ],
+  [
+   -0.9750000238418579,
+   0.0,
+   0.05000000074505806
+  ],
+  [
+   0.9750000238418579,
+   0.0,
+   0.05000000074505806
+  ],
+  [
+   0.0,
+   -0.9750000238418579,
+   0.05000000074505806
+  ],
+  [
+   0.0,
+   0.9750000238418579,
+   0.05000000074505806
+  ]
+ ],
+ "hazard_placement_extents": [
+  -0.975,
+  -0.975,
+  0.975,
+  0.975
+ ],
+ "circle_radius": 1.5,
+ "circle_center": [
+  0.0,
+  0.0
+ ],
+ "reward_factor": 0.1,
+ "boundary_x": 0.975,
+ "boundary_y": 0.975,
+ "boundary_cost": 0.1,
+ "init_xy_range": 0.8,
+ "init_angle_range": 3.141592653589793
+}

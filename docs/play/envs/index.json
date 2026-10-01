@@ -1,0 +1,62 @@
+[
+ {
+  "env_name": "safe_goal_point",
+  "level": 1,
+  "file": "safe_goal_point_level1"
+ },
+ {
+  "env_name": "safe_goal_point",
+  "level": 2,
+  "file": "safe_goal_point_level2"
+ },
+ {
+  "env_name": "safe_goal_point",
+  "level": 3,
+  "file": "safe_goal_point_level3"
+ },
+ {
+  "env_name": "safe_push_point",
+  "level": 1,
+  "file": "safe_push_point_level1"
+ },
+ {
+  "env_name": "safe_push_point",
+  "level": 2,
+  "file": "safe_push_point_level2"
+ },
+ {
+  "env_name": "safe_push_point",
+  "level": 3,
+  "file": "safe_push_point_level3"
+ },
+ {
+  "env_name": "safe_circle_point",
+  "level": 1,
+  "file": "safe_circle_point_level1"
+ },
+ {
+  "env_name": "safe_circle_point",
+  "level": 2,
+  "file": "safe_circle_point_level2"
+ },
+ {
+  "env_name": "safe_circle_point",
+  "level": 3,
+  "file": "safe_circle_point_level3"
+ },
+ {
+  "env_name": "safe_button_point",
+  "level": 1,
+  "file": "safe_button_point_level1"
+ },
+ {
+  "env_name": "safe_button_point",
+  "level": 2,
+  "file": "safe_button_point_level2"
+ },
+ {
+  "env_name": "safe_button_point",
+  "level": 3,
+  "file": "safe_button_point_level3"
+ }
+]

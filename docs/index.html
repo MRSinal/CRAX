@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRAX: Fast Safe Reinforcement Learning Benchmarking</title>
+  <meta name="description" content="CRAX is a GPU-accelerated safe reinforcement learning benchmark built on MuJoCo XLA (MJX) and JAX: eight tasks, three difficulty levels, seven SafeRL baselines and up to 200x faster training than CPU-based safety benchmarks.">
+  <meta property="og:title" content="CRAX: Fast Safe Reinforcement Learning Benchmarking">
+  <meta property="og:description" content="GPU-accelerated safe RL benchmark in JAX. Play the environments in your browser.">
+  <meta property="og:image" content="static/envs_poster.jpg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23e5484d'/><circle cx='16' cy='16' r='6' fill='%23fff'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+  <script type="module" src="play/player.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#top">CRAX</a>
+  <nav>
+    <a href="#play">Play</a>
+    <a href="#environments">Environments</a>
+    <a href="#results">Results</a>
+    <a href="#algorithms">Algorithms</a>
+    <a href="#start">Get started</a>
+    <a href="#citation">Cite</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ============================== HERO ============================== -->
+  <section class="hero">
+    <p class="eyebrow">Constrained RL Accelerated with JAX</p>
+    <h1>CRAX: Fast Safe Reinforcement Learning Benchmarking</h1>
+    <p class="authors">
+      <span>Tristan Tomilin</span>
+      <span>Mourad Boustani</span>
+      <span>Mickey Beurskens</span>
+      <span>Khoi H. B. Nguyen</span>
+      <span>Thiago D. Simão</span>
+    </p>
+    <p class="affiliation">Eindhoven University of Technology</p>
+    <div class="links">
+      <a class="btn btn-primary" href="https://arxiv.org/abs/2606.20376">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        Paper
+      </a>
+      <a class="btn" href="arXiv.pdf">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        PDF
+      </a>
+      <a class="btn" href="https://github.com/TTomilin/CRAX">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+        Code
+      </a>
+      <a class="btn" href="#play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 10v4M5 12h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="11" r="1.2" fill="currentColor"/><circle cx="18" cy="13.5" r="1.2" fill="currentColor"/></svg>
+        Play in browser
+      </a>
+      <a class="btn" href="#citation">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h4v4H8c0 2 1 3 3 3v2c-3 0-5-2-5-5V7zm8 0h4v4h-3c0 2 1 3 3 3v2c-3 0-5-2-5-5V7z" fill="currentColor"/></svg>
+        BibTeX
+      </a>
+    </div>
+
+    <figure class="hero-media">
+      <video autoplay loop muted playsinline poster="static/envs_poster.jpg">
+        <source src="static/envs.mp4" type="video/mp4">
+      </video>
+    </figure>
+
+    <ul class="stats">
+      <li><strong>~1M</strong><span>steps per second on a single H100</span></li>
+      <li><strong>25–180×</strong><span>peak throughput over Safety-Gymnasium</span></li>
+      <li><strong>8 × 3</strong><span>tasks × difficulty levels, 8 agent morphologies</span></li>
+      <li><strong>7</strong><span>SafeRL baselines re-implemented in JAX</span></li>
+    </ul>
+  </section>
+
+  <!-- ============================== ABSTRACT ============================== -->
+  <section class="section narrow" id="abstract">
+    <h2>Abstract</h2>
+    <p>
+      Safety is a core concern for deploying reinforcement learning (RL) agents in real-world domains such as robotics
+      and autonomous driving. While benchmarks have been central to progress in RL, existing 3D physics-based safety
+      benchmarks remain computationally slow, limiting large-scale experimentation and rapid prototyping. To address
+      this gap, we propose <b>CRAX</b> (<b>C</b>onstrained <b>R</b>L <b>A</b>ccelerated with JA<b>X</b>). Built on top
+      of the MuJoCo XLA (MJX) physics engine, CRAX leverages vectorized operations and hardware acceleration, yielding
+      up to 200x faster training over comparable CPU-based safety benchmarks. The benchmark features eight tasks
+      spanning three difficulty levels and multiple agent morphologies. Evaluating seven popular safe RL methods, we
+      find that none dominates across tasks, and that learning safe policies from pixels remains largely unsolved.
+    </p>
+  </section>
+
+  <!-- ============================== PLAY ============================== -->
+  <section class="section" id="play">
+    <div class="section-head">
+      <h2>Try it yourself</h2>
+      <p>
+        Drive the Point agent through the four navigation suites. Collect reward, and watch the
+        <span class="tag tag-cost">cost</span> counter: every hazard you graze is a constraint violation. Can you beat
+        a cost budget of <b>25</b> per episode, the threshold used in the paper?
+      </p>
+    </div>
+
+    <div class="player" data-crax-player data-env="safe_goal_point" data-level="1">
+      <div class="player-toolbar">
+        <div class="seg" role="group" aria-label="Task">
+          <button data-env-choice="safe_goal_point">Goal</button>
+          <button data-env-choice="safe_push_point">Push</button>
+          <button data-env-choice="safe_circle_point">Circle</button>
+          <button data-env-choice="safe_button_point">Button</button>
+        </div>
+        <div class="seg" role="group" aria-label="Difficulty level">
+          <button data-level-choice="1">Level 1</button>
+          <button data-level-choice="2">Level 2</button>
+          <button data-level-choice="3">Level 3</button>
+        </div>
+        <div class="seg seg-actions">
+          <button data-action="camera" title="Cycle camera (C)">Camera</button>
+          <button data-action="reset" title="Reset episode (R)">Reset</button>
+          <button data-action="pause" title="Pause / resume (Space)">Pause</button>
+        </div>
+      </div>
+
+      <div class="player-body">
+        <div class="player-stage" tabindex="0" aria-label="CRAX simulator. Use W A S D or arrow keys to drive.">
+          <canvas></canvas>
+          <div class="player-flash" aria-hidden="true"></div>
+          <div class="player-overlay">
+            <img src="static/levels/safe_point_goal_level_1.jpg" alt="" class="player-poster">
+            <div class="player-cta">
+              <button class="btn btn-primary btn-lg" data-action="start">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" fill="currentColor"/></svg>
+                Launch simulator
+              </button>
+              <p class="player-status">Runs MuJoCo compiled to WebAssembly, right in your browser (~10&nbsp;MB download).</p>
+            </div>
+          </div>
+          <div class="player-paused" aria-hidden="true">Paused</div>
+          <div class="player-focus-hint" aria-hidden="true">Click to take control</div>
+          <div class="pad" aria-hidden="true">
+            <button data-pad="thrust:1" class="pad-up">▲</button>
+            <button data-pad="turn:1" class="pad-left">◀</button>
+            <button data-pad="turn:-1" class="pad-right">▶</button>
+            <button data-pad="thrust:-1" class="pad-down">▼</button>
+          </div>
+        </div>
+
+        <aside class="player-side">
+          <dl class="hud">
+            <div><dt>Episode</dt><dd data-hud="episode">–</dd></div>
+            <div><dt>Step</dt><dd data-hud="steps">–</dd></div>
+            <div class="hud-return"><dt>Return</dt><dd data-hud="return">0.00</dd></div>
+            <div class="hud-cost"><dt>Cost</dt><dd data-hud="cost">0.00</dd></div>
+            <div><dt>Goals</dt><dd data-hud="goals">0</dd></div>
+            <div><dt>Camera</dt><dd data-hud="camera">–</dd></div>
+            <div class="hud-wide"><dt>Action</dt><dd data-hud="action">[0, 0]</dd></div>
+          </dl>
+
+          <div class="keys">
+            <div><kbd>W</kbd><kbd>S</kbd> <span>thrust</span></div>
+            <div><kbd>A</kbd><kbd>D</kbd> <span>turn</span></div>
+            <div><kbd>C</kbd> <span>camera</span> <kbd>R</kbd> <span>reset</span></div>
+            <div><kbd>Space</kbd> <span>pause</span></div>
+          </div>
+
+          <div class="env-info" data-env-info="safe_goal_point">
+            <h4>Safe Goal</h4>
+            <p>Reach the green goals (+1 each; they respawn). Hazard discs cost more the closer you are to their centre;
+              tall pillars (levels 2–3) and the outer wall cost 3 per contact.</p>
+          </div>
+          <div class="env-info" data-env-info="safe_push_point" hidden>
+            <h4>Safe Push</h4>
+            <p>Push the blue block into the green goal. Reward is dense in block-to-goal and agent-to-block distance.
+              The goal drifts at levels 2 and 3. Only the agent pays cost for touching hazards.</p>
+          </div>
+          <div class="env-info" data-env-info="safe_button_point" hidden>
+            <h4>Safe Button</h4>
+            <p>Bump the button under the green marker (+1), then a new one is picked. Pressing a wrong button costs 1;
+              the cubes and the orbiting purple gremlins cost 3 per contact.</p>
+          </div>
+          <div class="env-info" data-env-info="safe_circle_point" hidden>
+            <h4>Safe Circle</h4>
+            <p>Run laps around the green circle: reward is tangential speed, damped by distance from the ring. Leaving
+              the yellow boundary costs 0.1 per step; levels 2–3 add hazards inside.</p>
+          </div>
+        </aside>
+      </div>
+      <p class="player-note">
+        The browser port runs the same MuJoCo models and task logic as
+        <a href="https://github.com/TTomilin/CRAX/blob/main/crax/play/play.py"><code>python -m crax.play</code></a>,
+        but on CPU MuJoCo instead of MJX, so trajectories can differ slightly from the benchmark.
+      </p>
+    </div>
+  </section>
+
+  <script>
+    // ES modules and fetch() are blocked for file:// pages, so the simulator
+    // needs the page to be served over HTTP (GitHub Pages, or a local server).
+    if (location.protocol === 'file:') {
+      document.querySelectorAll('[data-crax-player]').forEach((el) => {
+        el.classList.add('is-error');
+        el.querySelector('[data-action=start]').disabled = true;
+        el.querySelector('.player-status').innerHTML =
+          'Browsers block the simulator on <code>file://</code> pages. Serve the site instead:<br>' +
+          '<code>python -m http.server -d docs</code> and open <code>http://localhost:8000</code>';
+      });
+    }
+  </script>
+
+  <!-- ============================== ENVIRONMENTS ============================== -->
+  <section class="section" id="environments">
+    <div class="section-head">
+      <h2>Environments</h2>
+      <p>
+        Eight suites, each with a reward and a separate cost signal. Goal, Push, Circle and Velocity descend from
+        Safety-Gymnasium; Pathway, Height, Lift and Reach are new. Five constraint types cover the space:
+        <span class="tag">hazards</span> <span class="tag">velocity</span> <span class="tag">height</span>
+        <span class="tag">contact</span> <span class="tag">boundary</span>.
+      </p>
+    </div>
+
+    <div class="env-grid">
+      <figure><img src="static/envs/goal.jpg" alt="Safe Goal" loading="lazy"><figcaption><b>Safe Goal</b>Reach the goal without colliding with the hazards</figcaption></figure>
+      <figure><img src="static/envs/push.jpg" alt="Safe Push" loading="lazy"><figcaption><b>Safe Push</b>Push the block to the goal while avoiding obstacles</figcaption></figure>
+      <figure><img src="static/envs/circle.jpg" alt="Safe Circle" loading="lazy"><figcaption><b>Safe Circle</b>Move along a circular path while avoiding hazards</figcaption></figure>
+      <figure><img src="static/envs/reacher.jpg" alt="Safe Reacher" loading="lazy"><figcaption><b>Safe Reacher</b>Reach the target without touching the hazards</figcaption></figure>
+      <figure><img src="static/envs/lift.jpg" alt="Safe Lift" loading="lazy"><figcaption><b>Safe Lift</b>Move forward while lifting designated legs</figcaption></figure>
+      <figure><img src="static/envs/pathway.jpg" alt="Safe Pathway" loading="lazy"><figcaption><b>Safe Pathway</b>Traverse the path without stepping on the hazards</figcaption></figure>
+      <figure><img src="static/envs/velocity.jpg" alt="Safe Velocity" loading="lazy"><figcaption><b>Safe Velocity</b>Move fast while adhering to a velocity limit</figcaption></figure>
+      <figure><img src="static/envs/height.jpg" alt="Safe Height" loading="lazy"><figcaption><b>Safe Height</b>Move forward under the height bound</figcaption></figure>
+    </div>
+
+    <h3>Agents &times; tasks</h3>
+    <div class="table-wrap">
+      <table class="matrix">
+        <thead>
+          <tr><th></th><th colspan="4" class="grp grp-3d">3D</th><th colspan="3" class="grp grp-2d">2D</th><th class="grp grp-fixed">Fixed base</th></tr>
+          <tr><th>Task</th><th>Point</th><th>Ant</th><th>Humanoid</th><th>Spider</th><th>HalfCheetah</th><th>Walker2d</th><th>Hopper</th><th>Reacher</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Goal</td><td class="y s">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>Circle</td><td class="y s">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>Push</td><td class="y s">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>Velocity</td><td class="y">●</td><td class="y">●</td><td class="y s">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td></td></tr>
+          <tr><td>Height</td><td></td><td></td><td class="y s">●</td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>Lift</td><td></td><td></td><td></td><td class="y s">●</td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>Pathway</td><td></td><td></td><td></td><td></td><td class="y">●</td><td class="y s">●</td><td class="y">●</td><td></td></tr>
+          <tr><td>Reach</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="y s">●</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Highlighted entries are the configurations evaluated in the paper.</p>
+
+    <h3>Three difficulty levels</h3>
+    <p class="lead">Each suite ramps from a lenient setting most methods can solve to one that leaves ample room for
+      improvement: more and more varied hazards, smaller goals, moving targets, stricter bounds or more restricted limbs.</p>
+    <div class="levels" data-levels>
+      <div class="seg" role="tablist" aria-label="Suite">
+        <button role="tab" data-suite="safe_point_goal" aria-selected="true">Goal</button>
+        <button role="tab" data-suite="safe_point_circle">Circle</button>
+        <button role="tab" data-suite="safe_block_push">Push</button>
+        <button role="tab" data-suite="safe_reacher">Reacher</button>
+        <button role="tab" data-suite="safe_walker">Pathway</button>
+        <button role="tab" data-suite="safe_height">Height</button>
+        <button role="tab" data-suite="safe_spider">Lift</button>
+      </div>
+      <div class="level-row">
+        <figure><img data-level="1" src="static/levels/safe_point_goal_level_1.jpg" alt="Level 1" loading="lazy"><figcaption>Level 1</figcaption></figure>
+        <figure><img data-level="2" src="static/levels/safe_point_goal_level_2.jpg" alt="Level 2" loading="lazy"><figcaption>Level 2</figcaption></figure>
+        <figure><img data-level="3" src="static/levels/safe_point_goal_level_3.jpg" alt="Level 3" loading="lazy"><figcaption>Level 3</figcaption></figure>
+      </div>
+    </div>
+
+    <h3>Learning from pixels</h3>
+    <p class="lead">Every task exposes an egocentric camera mounted on the agent and an allocentric camera observing it
+      from outside. Frames are rendered on the GPU inside the same compiled loop as the simulation, so pixel
+      observations never leave the device.</p>
+    <div class="views">
+      <figure><div><img src="static/views/point_goal_ego.jpg" alt="" loading="lazy"><img src="static/views/point_goal_allo.jpg" alt="" loading="lazy"></div><figcaption>Point Goal</figcaption></figure>
+      <figure><div><img src="static/views/walker_pathway_ego.jpg" alt="" loading="lazy"><img src="static/views/walker_pathway_allo.jpg" alt="" loading="lazy"></div><figcaption>Walker Pathway</figcaption></figure>
+      <figure><div><img src="static/views/point_circle_ego.jpg" alt="" loading="lazy"><img src="static/views/point_circle_allo.jpg" alt="" loading="lazy"></div><figcaption>Point Circle</figcaption></figure>
+    </div>
+    <p class="caption">Egocentric (left of each pair) and allocentric (right) views. Policies receive them at 64&times;64.</p>
+  </section>
+
+  <!-- ============================== RESULTS ============================== -->
+  <section class="section" id="results">
+    <div class="section-head">
+      <h2>Results</h2>
+    </div>
+
+    <div class="result">
+      <div class="result-text">
+        <h3>Two orders of magnitude faster</h3>
+        <p>On identical hardware, Safety-Gymnasium saturates at 3K–20K steps per second and runs out of CPU memory past
+          256 environments. CRAX keeps scaling to thousands of parallel environments and peaks at roughly <b>1M SPS</b>
+          on Point Goal and Ant Velocity and 340K SPS on Humanoid Velocity: <b>25–180×</b> the peak of
+          Safety-Gymnasium.</p>
+        <p>The full evaluation suite (algorithms × environments × levels × seeds) is hundreds of runs and trillions of
+          environment steps. CRAX completes it in <b>2 weeks</b> on a single H100; the same study on Safety-Gymnasium
+          would take close to a year.</p>
+      </div>
+      <figure class="result-fig"><img src="static/figs/fig6.png" alt="Steps per second of CRAX and Safety-Gymnasium versus number of parallel environments" loading="lazy"></figure>
+    </div>
+
+    <div class="result result-stack">
+      <div class="result-text">
+        <h3>No method dominates</h3>
+        <p>Seven SafeRL baselines plus unconstrained PPO, trained for 500M steps with 10 seeds each on every Level 1
+          task. P3O and FOCOPS are the strongest overall; PPOLag is the only baseline that satisfies every cost bound on
+          Levels 2 and 3, but at the price of reward. The dashed line marks the cost threshold <i>d</i> = 25.</p>
+      </div>
+      <figure class="result-fig"><img src="static/figs/fig4.png" alt="Reward and cost of baselines on Level 1 tasks" loading="lazy"></figure>
+    </div>
+
+    <div class="table-wrap">
+      <table class="summary">
+        <caption>Summary across the 8 environments. <b>Wins</b>: highest reward while safe (cost &lt; 25). <b>Safe%</b>: share of environments where the method is safe.</caption>
+        <thead>
+          <tr><th rowspan="2">Algorithm</th><th colspan="2">Level 1</th><th colspan="2">Level 2</th><th colspan="2">Level 3</th><th colspan="2">Total</th></tr>
+          <tr><th>Wins ↑</th><th>Safe% ↑</th><th>Wins ↑</th><th>Safe% ↑</th><th>Wins ↑</th><th>Safe% ↑</th><th>Wins ↑</th><th>Safe% ↑</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>PPO</td><td>1</td><td>25</td><td>1</td><td>12</td><td>0</td><td>0</td><td>2</td><td>12</td></tr>
+          <tr><td>PPOCost</td><td>0</td><td>88</td><td>0</td><td>38</td><td>1</td><td>25</td><td>1</td><td>50</td></tr>
+          <tr><td>PPOLag</td><td><b>2</b></td><td>88</td><td>0</td><td class="full">100</td><td>0</td><td class="full">100</td><td>2</td><td><b>96</b></td></tr>
+          <tr><td>PPOPID</td><td>0</td><td class="full">100</td><td>0</td><td>50</td><td>1</td><td>88</td><td>1</td><td>79</td></tr>
+          <tr><td>PPOSaute</td><td>1</td><td>38</td><td>0</td><td>25</td><td>0</td><td>12</td><td>1</td><td>25</td></tr>
+          <tr><td>P3O</td><td><b>2</b></td><td>62</td><td><b>3</b></td><td>75</td><td><b>3</b></td><td>75</td><td><b>8</b></td><td>71</td></tr>
+          <tr><td>FOCOPS</td><td>1</td><td>75</td><td>2</td><td>88</td><td><b>3</b></td><td>88</td><td>6</td><td>83</td></tr>
+          <tr><td>CRPO</td><td>1</td><td>75</td><td>2</td><td>62</td><td>0</td><td>38</td><td>3</td><td>58</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-pair">
+      <div class="result">
+        <div class="result-text">
+          <h3>Safety from pixels is open</h3>
+          <p>Every method earns less reward from egocentric frames than from state vectors, and less still from
+            allocentric frames. No method learns to push the block from allocentric pixels, and on the remaining five
+            environments none learns a meaningful policy from pixels at all.</p>
+        </div>
+        <figure class="result-fig"><img src="static/figs/fig5.png" alt="Reward and cost from vector, egocentric and allocentric observations" loading="lazy"></figure>
+      </div>
+      <div class="result">
+        <div class="result-text">
+          <h3>How many seeds are enough?</h3>
+          <p>Throughput makes reliability studies cheap. Relative to the mean, the 95% confidence interval shrinks from
+            about 90% at two seeds to 40% at three and 22% at five, after which gains are small.</p>
+        </div>
+        <figure class="result-fig"><img src="static/figs/fig7.png" alt="Confidence interval width versus number of seeds" loading="lazy"></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== ALGORITHMS ============================== -->
+  <section class="section" id="algorithms">
+    <div class="section-head">
+      <h2>Algorithms</h2>
+      <p>All baselines share one fully compiled JAX training loop with hooks for custom losses and constraint handling,
+        so adding a method means writing its loss, not its infrastructure. Select one with <code>--alg</code>.</p>
+    </div>
+    <div class="algo-grid">
+      <div class="algo"><code>ppo</code><b>PPO</b><span>Unconstrained on-policy reference</span></div>
+      <div class="algo"><code>ppo_cost</code><b>PPO-Cost</b><span>Cost folded into the reward as a penalty</span></div>
+      <div class="algo"><code>ppo_lag</code><b>PPO-Lagrangian</b><span>Primal-dual with a learned multiplier</span></div>
+      <div class="algo"><code>ppo_pid</code><b>PPO-PID</b><span>PID-controlled Lagrange multiplier</span></div>
+      <div class="algo"><code>ppo_saute</code><b>PPO-Sauté</b><span>Safety budget augmented into the state</span></div>
+      <div class="algo"><code>p3o</code><b>P3O</b><span>Penalized proximal policy optimization</span></div>
+      <div class="algo"><code>focops</code><b>FOCOPS</b><span>First-order constrained optimization in policy space</span></div>
+      <div class="algo"><code>crpo</code><b>CRPO</b><span>Alternates reward and cost steps, no multiplier</span></div>
+      <div class="algo algo-off"><code>sac</code><b>SAC</b><span>Unconstrained off-policy reference</span></div>
+      <div class="algo algo-off"><code>sac_lag</code><b>SAC-Lagrangian</b><span>Off-policy primal-dual</span></div>
+      <div class="algo algo-off"><code>sac_pid</code><b>SAC-PID</b><span>Off-policy PID Lagrangian</span></div>
+    </div>
+  </section>
+
+  <!-- ============================== GET STARTED ============================== -->
+  <section class="section" id="start">
+    <div class="section-head">
+      <h2>Get started</h2>
+    </div>
+    <div class="code-grid">
+      <div>
+        <h4>Install</h4>
+<pre><code>git clone https://github.com/TTomilin/CRAX.git
+cd CRAX
+pip install -e ".[train,cuda]"</code></pre>
+        <h4>Train</h4>
+<pre><code>python -m training.train_env \
+  --env_name safe_goal_point --difficulty 1 \
+  --alg ppo_lag</code></pre>
+        <h4>Play with the keyboard</h4>
+<pre><code>pip install pygame
+python -m crax.play --env_name safe_push_point --level 3</code></pre>
+      </div>
+      <div>
+        <h4>Step an environment</h4>
+<pre><code><span class="k">import</span> jax
+<span class="k">from</span> crax <span class="k">import</span> envs
+
+env = envs.get_environment(<span class="s">'safe_goal_point'</span>, level=<span class="n">1</span>)
+reset_fn, step_fn = jax.jit(env.reset), jax.jit(env.step)
+
+rng = jax.random.PRNGKey(<span class="n">0</span>)
+state = reset_fn(rng)
+<span class="k">for</span> _ <span class="k">in</span> range(<span class="n">300</span>):
+    rng, key = jax.random.split(rng)
+    action = jax.random.uniform(key, (env.action_size,),
+                                minval=<span class="n">-1.0</span>, maxval=<span class="n">1.0</span>)
+    state = step_fn(state, action)
+    reward = float(state.reward)
+    cost = float(state.info[<span class="s">'cost'</span>])  <span class="c"># safety cost per step</span></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== CITATION ============================== -->
+  <section class="section narrow" id="citation">
+    <h2>Citation</h2>
+    <div class="bibtex">
+      <button class="copy" data-copy="#bibtex">Copy</button>
+<pre id="bibtex"><code>@article{tomilin2026crax,
+  title   = {{CRAX}: Fast Safe Reinforcement Learning Benchmarking},
+  author  = {Tomilin, Tristan and Boustani, Mourad and Beurskens, Mickey and
+             Nguyen, Khoi H. B. and Sim{\~a}o, Thiago D.},
+  journal = {arXiv preprint arXiv:2606.20376},
+  year    = {2026}
+}</code></pre>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>CRAX is released under the <a href="https://github.com/TTomilin/CRAX/blob/main/LICENSE">Apache 2.0 license</a>.
+    Built on <a href="https://github.com/google/brax">Brax</a> and
+    <a href="https://mujoco.readthedocs.io/en/stable/mjx.html">MuJoCo XLA</a>; the in-browser player uses the
+    <a href="https://github.com/google-deepmind/mujoco/tree/main/wasm">MuJoCo WebAssembly bindings</a> and
+    <a href="https://threejs.org">three.js</a>.</p>
+</footer>
+
+<script>
+  // Difficulty-level tabs.
+  document.querySelectorAll('[data-levels]').forEach((root) => {
+    root.querySelectorAll('[data-suite]').forEach((tab) => tab.addEventListener('click', () => {
+      root.querySelectorAll('[data-suite]').forEach((t) => t.setAttribute('aria-selected', t === tab));
+      root.querySelectorAll('img[data-level]').forEach((img) => {
+        img.src = `static/levels/${tab.dataset.suite}_level_${img.dataset.level}.jpg`;
+      });
+    }));
+  });
+  // Copy buttons.
+  document.querySelectorAll('[data-copy]').forEach((btn) => btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(document.querySelector(btn.dataset.copy).innerText);
+      btn.textContent = 'Copied';
+    } catch {
+      btn.textContent = 'Select & copy';
+    }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  }));
+</script>
+</body>
+</html>

@@ -1,0 +1,623 @@
+{
+ "env_name": "safe_goal_point",
+ "task": "goal",
+ "level": 3,
+ "mujoco_version": "3.11.0",
+ "n_frames": 4,
+ "dt": 0.07999999821186066,
+ "episode_length": 1000,
+ "agent_body": 1,
+ "agent_geom_ids": [
+  2,
+  3
+ ],
+ "healthy_z_range": [
+  0.05,
+  0.3
+ ],
+ "reset_noise_scale": 0.005,
+ "placement_extents": [
+  -2.5,
+  -2.5,
+  2.5,
+  2.5
+ ],
+ "placement_margin": 0.01,
+ "max_placement_attempts": 100,
+ "agent_keepout": 0.1,
+ "proximity_cost_scaler": 2.0,
+ "collision_cost": 3.0,
+ "num_movable_hazards": 20,
+ "hazards": [
+  {
+   "type": "cube",
+   "geom_id": 6,
+   "mocap_id": 2,
+   "size": [
+    0.3
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.4242640733718872,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.30000001192092896,
+    0.30000001192092896
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 7,
+   "mocap_id": 3,
+   "size": [
+    0.3
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.4242640733718872,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.30000001192092896,
+    0.30000001192092896
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 8,
+   "mocap_id": 4,
+   "size": [
+    0.3
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.4242640733718872,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.30000001192092896,
+    0.30000001192092896
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 9,
+   "mocap_id": 5,
+   "size": [
+    0.3
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.4242640733718872,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.30000001192092896,
+    0.30000001192092896
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 10,
+   "mocap_id": 6,
+   "size": [
+    0.3
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.4242640733718872,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.30000001192092896,
+    0.30000001192092896
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 11,
+   "mocap_id": 7,
+   "size": [
+    0.3
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.4242640733718872,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.30000001192092896,
+    0.30000001192092896
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 12,
+   "mocap_id": 8,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.3535533845424652,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.25,
+    0.25
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 13,
+   "mocap_id": 9,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.3535533845424652,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.25,
+    0.25
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 14,
+   "mocap_id": 10,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.3535533845424652,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.25,
+    0.25
+   ]
+  },
+  {
+   "type": "cube",
+   "geom_id": 15,
+   "mocap_id": 11,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.3535533845424652,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.25,
+    0.25
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 16,
+   "mocap_id": 12,
+   "size": [
+    0.35
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.35,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.3499999940395355
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 17,
+   "mocap_id": 13,
+   "size": [
+    0.35
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.35,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.3499999940395355
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 18,
+   "mocap_id": 14,
+   "size": [
+    0.35
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.35,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.3499999940395355
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 19,
+   "mocap_id": 15,
+   "size": [
+    0.35
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.35,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.3499999940395355
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 20,
+   "mocap_id": 16,
+   "size": [
+    0.35
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.35,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.3499999940395355
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 21,
+   "mocap_id": 17,
+   "size": [
+    0.35
+   ],
+   "collidable": false,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.35,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.3499999940395355
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 22,
+   "mocap_id": 18,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.25,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.25
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 23,
+   "mocap_id": 19,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.25,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.25
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 24,
+   "mocap_id": 20,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.25,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.25
+   ]
+  },
+  {
+   "type": "cylinder",
+   "geom_id": 25,
+   "mocap_id": 21,
+   "size": [
+    0.25
+   ],
+   "collidable": true,
+   "fixed": false,
+   "travel": 0.0,
+   "keepout": 0.25,
+   "keepout_shape": "circle",
+   "keepout_param": [
+    0.25
+   ]
+  },
+  {
+   "type": "rect",
+   "geom_id": 26,
+   "mocap_id": 22,
+   "size": [
+    0.06,
+    3.0
+   ],
+   "collidable": true,
+   "fixed": true,
+   "travel": 0.0,
+   "keepout": 3.0005998611450195,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.05999999865889549,
+    3.0
+   ]
+  },
+  {
+   "type": "rect",
+   "geom_id": 27,
+   "mocap_id": 23,
+   "size": [
+    0.06,
+    3.0
+   ],
+   "collidable": true,
+   "fixed": true,
+   "travel": 0.0,
+   "keepout": 3.0005998611450195,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    0.05999999865889549,
+    3.0
+   ]
+  },
+  {
+   "type": "rect",
+   "geom_id": 28,
+   "mocap_id": 24,
+   "size": [
+    3.0,
+    0.06
+   ],
+   "collidable": true,
+   "fixed": true,
+   "travel": 0.0,
+   "keepout": 3.0005998611450195,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    3.0,
+    0.05999999865889549
+   ]
+  },
+  {
+   "type": "rect",
+   "geom_id": 29,
+   "mocap_id": 25,
+   "size": [
+    3.0,
+    0.06
+   ],
+   "collidable": true,
+   "fixed": true,
+   "travel": 0.0,
+   "keepout": 3.0005998611450195,
+   "keepout_shape": "rect",
+   "keepout_param": [
+    3.0,
+    0.05999999865889549
+   ]
+  }
+ ],
+ "cameras": [
+  "fixedfar",
+  "track",
+  "vision",
+  "vision_back"
+ ],
+ "goal_mocap_ids": [
+  0,
+  1
+ ],
+ "goal_type_ids": [
+  1,
+  1
+ ],
+ "goal_radii": [
+  0.1599999964237213,
+  0.1599999964237213
+ ],
+ "goal_box_he": [
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ]
+ ],
+ "goal_yaws": [
+  0.0,
+  0.0
+ ],
+ "goal_keepouts": [
+  0.1599999964237213,
+  0.1599999964237213
+ ],
+ "hazard_is_rect": [
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true,
+  true,
+  true,
+  true
+ ],
+ "hazard_half_extents": [
+  [
+   0.30000001192092896,
+   0.30000001192092896
+  ],
+  [
+   0.30000001192092896,
+   0.30000001192092896
+  ],
+  [
+   0.30000001192092896,
+   0.30000001192092896
+  ],
+  [
+   0.30000001192092896,
+   0.30000001192092896
+  ],
+  [
+   0.30000001192092896,
+   0.30000001192092896
+  ],
+  [
+   0.30000001192092896,
+   0.30000001192092896
+  ],
+  [
+   0.25,
+   0.25
+  ],
+  [
+   0.25,
+   0.25
+  ],
+  [
+   0.25,
+   0.25
+  ],
+  [
+   0.25,
+   0.25
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.05999999865889549,
+   3.0
+  ],
+  [
+   0.05999999865889549,
+   3.0
+  ],
+  [
+   3.0,
+   0.05999999865889549
+  ],
+  [
+   3.0,
+   0.05999999865889549
+  ]
+ ],
+ "hazard_radii": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.3499999940395355,
+  0.3499999940395355,
+  0.3499999940395355,
+  0.3499999940395355,
+  0.3499999940395355,
+  0.3499999940395355,
+  0.25,
+  0.25,
+  0.25,
+  0.25,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "reward_goal": 1.0,
+ "reward_distance": 0.0
+}
