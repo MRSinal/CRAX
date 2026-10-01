@@ -340,7 +340,7 @@ export class Player {
     }
     this.flash *= 0.9;
     this.$('.player-flash').style.opacity = (0.55 * this.flash).toFixed(3);
-    this.view.sync(env.data, this.cameras[this.camIdx][1]);
+    this.view.sync(env.displayPose(), this.cameras[this.camIdx][1]);
     this.view.render();
   }
 

@@ -211,6 +211,7 @@ export class CraxEnv {
     }
     this.stepCount = 0;
     this.stepTouching = new Set();
+    this.prevPose = null;
     return { reward: 0, cost: 0, done: false, goalsReached: 0 };
   }
 
@@ -270,8 +271,32 @@ export class CraxEnv {
   physicsSubstep(action) {
     const ctrl = this.data.ctrl;
     for (let i = 0; i < action.length; i++) ctrl[i] = action[i];
+    this.prevPose = this.pose();
     this.mujoco.mj_step(this.model, this.data);
     this.collectAgentContacts(this.stepTouching);
+  }
+
+  pose() {
+    const d = this.data;
+    return {
+      geom_xpos: Float64Array.from(d.geom_xpos), geom_xmat: Float64Array.from(d.geom_xmat),
+      cam_xpos: Float64Array.from(d.cam_xpos), cam_xmat: Float64Array.from(d.cam_xmat),
+    };
+  }
+
+  // Pose to draw: the mean of the last two physics steps. The point agent's
+  // yaw velocity servo is force-limited and its yaw inertia is tiny, so after
+  // turning it settles into a period-2 limit cycle (about +/-1 deg, flipping
+  // every physics step). Averaging two consecutive steps hides it at the page's
+  // 50 Hz rendering.
+  displayPose() {
+    const cur = this.pose(), prev = this.prevPose;
+    if (!prev) return cur;
+    for (const k of Object.keys(cur)) {
+      const a = cur[k], b = prev[k];
+      for (let i = 0; i < a.length; i++) a[i] = 0.5 * (a[i] + b[i]);
+    }
+    return cur;
   }
 
   // Task logic after `n_frames` physics sub-steps.
