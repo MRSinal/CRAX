@@ -459,7 +459,7 @@ class SafeCircle(PipelineEnv, ABC):
     def step(self, state: State, action: jp.ndarray) -> State:
         """Execute one step in the environment."""
         data0 = state.pipeline_state
-        data = self.pipeline_step(data0, action)
+        data = self.pipeline_step(data0, action, accumulate_contacts=True)
 
         agent_pos = data.xpos[self._agent_body]
         hazard_positions = state.info["hazard_positions"]

@@ -16,7 +16,7 @@
 # This file is derived from Brax 0.12.3 (envs/base.py) and has been modified
 # by the CRAX Authors: `PipelineEnv.__init__` accepts `physics`, `reward` and `cost` specification dicts, and
 # `Wrapper.render` forwards to the wrapped environment instead of resolving to
-# `Env.render` through the MRO.
+# `Env.render` through the MRO, and `PipelineEnv.pipeline_step` can accumulate contacts over substeps.
 
 # pylint:disable=g-multiple-import
 """A brax environment for training and inference."""
@@ -134,8 +134,24 @@ class PipelineEnv(Env):
     """Initializes the pipeline state."""
     return self._pipeline.init(self.sys, q, qd, act, ctrl, self._debug)
 
-  def pipeline_step(self, pipeline_state: Any, action: jax.Array) -> base.State:
-    """Takes a physics step using the physics pipeline."""
+  def pipeline_step(
+      self,
+      pipeline_state: Any,
+      action: jax.Array,
+      accumulate_contacts: bool = False,
+  ) -> base.State:
+    """Takes a physics step using the physics pipeline.
+
+    Args:
+      pipeline_state: physics state prior to the step
+      action: actuator input vector
+      accumulate_contacts: if True, `contact.dist` of the returned state holds
+        the minimum distance of each contact slot over all `n_frames` substeps,
+        so `dist <= 0` flags a touch at any point during the env step instead of
+        only at its final substep. Contact slots map to a fixed geom pair, so the
+        elementwise minimum is well-defined. Dynamics are unaffected, since
+        contacts are recomputed at the start of every physics step.
+    """
 
     def f(state, _):
       return (
@@ -143,7 +159,27 @@ class PipelineEnv(Env):
           None,
       )
 
-    return jax.lax.scan(f, pipeline_state, (), self._n_frames)[0]
+    if not accumulate_contacts:
+      return jax.lax.scan(f, pipeline_state, (), self._n_frames)[0]
+
+    def g(carry, _):
+      state, min_dist = carry
+      state = self._pipeline.step(self.sys, state, action, self._debug)
+      return (state, jax.numpy.minimum(min_dist, state.contact.dist)), None
+
+    first = self._pipeline.step(self.sys, pipeline_state, action, self._debug)
+    if first.contact is None:
+      return jax.lax.scan(f, first, (), self._n_frames - 1)[0]
+    state, min_dist = jax.lax.scan(
+        g, (first, first.contact.dist), (), self._n_frames - 1
+    )[0]
+    state = state.replace(contact=state.contact.replace(dist=min_dist))
+    impl = getattr(state, '_impl', None)
+    if getattr(impl, 'contact', None) is not None:
+      state = state.replace(
+          _impl=impl.replace(contact=impl.contact.replace(dist=min_dist))
+      )
+    return state
 
   @property
   def dt(self) -> jax.Array:

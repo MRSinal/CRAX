@@ -611,7 +611,7 @@ class SafeButton(PipelineEnv, ABC):
             data0 = data0.replace(mocap_pos=mpos)
             hazard_positions = hazard_positions.at[self._gremlin_indices].set(gremlin_positions)
 
-        data = self.pipeline_step(data0, action)
+        data = self.pipeline_step(data0, action, accumulate_contacts=True)
         agent_pos = data.xpos[self._agent_body]
 
         # Check button contacts (JAX-compatible)

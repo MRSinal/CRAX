@@ -461,7 +461,7 @@ class SafeGoal(PipelineEnv, ABC):
         """Execute one step in the environment."""
 
         data0 = state.pipeline_state
-        data = self.pipeline_step(data0, action)
+        data = self.pipeline_step(data0, action, accumulate_contacts=True)
 
         # Get positions
         agent_pos = data.xpos[self._agent_body]

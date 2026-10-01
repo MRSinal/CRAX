@@ -222,7 +222,7 @@ class SafeLift(PipelineEnv, ABC):
     def step(self, state: State, action: jax.Array) -> State:
         """Run one timestep of the environment's dynamics."""
         pipeline_state0 = state.pipeline_state
-        pipeline_state = self.pipeline_step(pipeline_state0, action)
+        pipeline_state = self.pipeline_step(pipeline_state0, action, accumulate_contacts=True)
 
         # Forward velocity reward
         velocity = (pipeline_state.x.pos[0] - pipeline_state0.x.pos[0]) / self.dt

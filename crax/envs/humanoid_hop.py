@@ -103,7 +103,7 @@ class HumanoidHop(Humanoid):
         # Get standard humanoid step behavior (forward motion, health, etc.)
         pipeline_state0 = state.pipeline_state
         assert pipeline_state0 is not None
-        pipeline_state = self.pipeline_step(pipeline_state0, action)
+        pipeline_state = self.pipeline_step(pipeline_state0, action, accumulate_contacts=True)
 
         # Calculate velocity using COM (matching Humanoid parent class exactly)
         com_before, *_ = self._com(pipeline_state0)

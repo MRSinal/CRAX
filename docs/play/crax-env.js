@@ -210,6 +210,7 @@ export class CraxEnv {
       });
     }
     this.stepCount = 0;
+    this.stepTouching = new Set();
     return { reward: 0, cost: 0, done: false, goalsReached: 0 };
   }
 
@@ -262,10 +263,15 @@ export class CraxEnv {
 
   // Sub-stepping lets the page render every physics frame (50 Hz) while the
   // task logic still runs once per env step, exactly as in `pipeline_step`.
+  //
+  // Contacts are collected after every sub-step, like
+  // `pipeline_step(..., accumulate_contacts=True)`: a touch at any of the
+  // n_frames sub-steps counts, not only one at the final sub-step.
   physicsSubstep(action) {
     const ctrl = this.data.ctrl;
     for (let i = 0; i < action.length; i++) ctrl[i] = action[i];
     this.mujoco.mj_step(this.model, this.data);
+    this.collectAgentContacts(this.stepTouching);
   }
 
   // Task logic after `n_frames` physics sub-steps.
@@ -279,13 +285,13 @@ export class CraxEnv {
     const [zmin, zmax] = this.spec.healthy_z_range;
     out.done = !(z >= zmin && z <= zmax) || Number.isNaN(z) || Boolean(out.doneGoal);
     this.stepCount += 1;
+    this.stepTouching = new Set();
     return out;
   }
 
   // ------------------------------------------------------------------ costs
-  // Geom ids the agent touches (contact dist <= 0), as in compute_hazard_costs.
-  agentContacts() {
-    const touching = new Set();
+  // Adds the geom ids the agent touches (contact dist <= 0) to `touching`.
+  collectAgentContacts(touching) {
     const contacts = this.data.contact;
     try {
       const n = Math.min(this.data.ncon, contacts.size());
@@ -300,10 +306,10 @@ export class CraxEnv {
     } finally {
       contacts.delete();
     }
-    return touching;
   }
 
-  hazardCost(touching = this.agentContacts()) {
+  // Geoms touched by the agent during any sub-step of the current env step.
+  hazardCost(touching = this.stepTouching) {
     const { spec } = this;
     const a = this.agentPos;
     let total = 0;
@@ -405,7 +411,7 @@ export class CraxEnv {
   // ---------------------------------------------------------- safe_button
   buttonStep() {
     const s = this.spec, a = this.agentPos;
-    const touching = this.agentContacts();
+    const touching = this.stepTouching;
     const pressed = s.button_geom_ids.map((g) => touching.has(g));
     const achieved = pressed[this.activeButton];
     const wrong = s.buttons_constrained && pressed.some((p, i) => p && i !== this.activeButton);
