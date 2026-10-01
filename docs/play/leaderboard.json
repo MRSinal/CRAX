@@ -1,0 +1,527 @@
+{
+ "cost_threshold": 25.0,
+ "boards": {
+  "safe_circle_point_level1": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 114.461,
+    "cost": 24.699,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 88.698,
+    "cost": 32.495,
+    "seeds": 10
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 96.672,
+    "cost": 29.024,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 126.99,
+    "cost": 45.0,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 103.845,
+    "cost": 11.909,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 89.85,
+    "cost": 25.309,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 90.534,
+    "cost": 21.838,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 120.156,
+    "cost": 46.027,
+    "seeds": 5
+   }
+  ],
+  "safe_circle_point_level2": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 88.41,
+    "cost": 24.379,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 62.211,
+    "cost": 25.081,
+    "seeds": 5
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 60.066,
+    "cost": 28.343,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 127.171,
+    "cost": 98.834,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 82.776,
+    "cost": 9.26,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 64.5,
+    "cost": 24.187,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 68.945,
+    "cost": 26.462,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 128.59,
+    "cost": 97.31,
+    "seeds": 5
+   }
+  ],
+  "safe_circle_point_level3": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 67.361,
+    "cost": 25.285,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 57.69,
+    "cost": 23.982,
+    "seeds": 5
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 61.298,
+    "cost": 27.489,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 127.498,
+    "cost": 99.356,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 80.785,
+    "cost": 38.112,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 53.454,
+    "cost": 18.711,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 39.883,
+    "cost": 21.575,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 123.125,
+    "cost": 96.808,
+    "seeds": 5
+   }
+  ],
+  "safe_goal_point_level1": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 33.238,
+    "cost": 24.806,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 37.215,
+    "cost": 25.071,
+    "seeds": 10
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 33.649,
+    "cost": 25.219,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 36.619,
+    "cost": 100.367,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 27.054,
+    "cost": 10.21,
+    "seeds": 9
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 34.259,
+    "cost": 24.885,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 33.957,
+    "cost": 24.947,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 33.937,
+    "cost": 94.007,
+    "seeds": 3
+   }
+  ],
+  "safe_goal_point_level2": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 18.937,
+    "cost": 26.088,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 73.292,
+    "cost": 24.646,
+    "seeds": 3
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 64.082,
+    "cost": 23.435,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 29.984,
+    "cost": 97.296,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 23.476,
+    "cost": 50.241,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 16.661,
+    "cost": 7.281,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 25.564,
+    "cost": 25.343,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 61.309,
+    "cost": 126.87,
+    "seeds": 3
+   }
+  ],
+  "safe_goal_point_level3": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 12.134,
+    "cost": 25.893,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 63.585,
+    "cost": 26.6,
+    "seeds": 3
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 56.009,
+    "cost": 23.537,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 25.713,
+    "cost": 192.662,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 14.841,
+    "cost": 87.524,
+    "seeds": 2
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 7.036,
+    "cost": 18.821,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 8.623,
+    "cost": 25.98,
+    "seeds": 3
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 52.701,
+    "cost": 190.96,
+    "seeds": 3
+   }
+  ],
+  "safe_push_point_level1": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 17.277,
+    "cost": 25.041,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 64.315,
+    "cost": 24.358,
+    "seeds": 10
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 47.651,
+    "cost": 26.708,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 64.468,
+    "cost": 227.656,
+    "seeds": 7
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 26.862,
+    "cost": 150.774,
+    "seeds": 9
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 26.579,
+    "cost": 17.62,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 17.152,
+    "cost": 19.947,
+    "seeds": 10
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 41.66,
+    "cost": 244.331,
+    "seeds": 5
+   }
+  ],
+  "safe_push_point_level2": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 7.667,
+    "cost": 26.252,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 40.5,
+    "cost": 24.607,
+    "seeds": 5
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 14.064,
+    "cost": 26.347,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 54.587,
+    "cost": 368.108,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 40.14,
+    "cost": 333.027,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 10.907,
+    "cost": 24.441,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 7.422,
+    "cost": 25.246,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 34.148,
+    "cost": 279.722,
+    "seeds": 5
+   }
+  ],
+  "safe_push_point_level3": [
+   {
+    "algo": "crpo",
+    "name": "CRPO",
+    "reward": 10.076,
+    "cost": 25.222,
+    "seeds": 5
+   },
+   {
+    "algo": "focops",
+    "name": "FOCOPS",
+    "reward": 40.809,
+    "cost": 24.254,
+    "seeds": 5
+   },
+   {
+    "algo": "p3o",
+    "name": "P3O",
+    "reward": 13.869,
+    "cost": 25.631,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo",
+    "name": "PPO",
+    "reward": 49.507,
+    "cost": 461.286,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_cost",
+    "name": "PPOCost",
+    "reward": 39.466,
+    "cost": 417.997,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_lag",
+    "name": "PPOLag",
+    "reward": 5.807,
+    "cost": 24.853,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_pid",
+    "name": "PPOPID",
+    "reward": 5.881,
+    "cost": 24.467,
+    "seeds": 5
+   },
+   {
+    "algo": "ppo_saute",
+    "name": "PPOSaute",
+    "reward": 25.004,
+    "cost": 293.644,
+    "seeds": 5
+   }
+  ]
+ }
+}

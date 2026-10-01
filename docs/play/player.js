@@ -4,11 +4,14 @@
 // three.js draws the scene from MuJoCo's geom and camera poses.
 import * as THREE from 'three';
 import { loadEnv, MUJOCO_VERSION } from './crax-env.js';
+import { isBetterRun, rankBoard, verdict } from './leaderboard.js';
 
 const MUJOCO_URL = `https://cdn.jsdelivr.net/npm/@mujoco/mujoco@${MUJOCO_VERSION}/mujoco.js`;
 const ENV_DIR = new URL('./envs', import.meta.url).href;
 const CAMERAS = ['track', 'fixedfar', 'vision'];
-const MAX_STEPS = 1000;
+const LEADERBOARD_URL = new URL('./leaderboard.json', import.meta.url).href;
+const TASK_NAMES = { goal: 'Goal', push: 'Push', circle: 'Circle', button: 'Button' };
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // mjtGeom
 const PLANE = 0, SPHERE = 2, CAPSULE = 3, ELLIPSOID = 4, CYLINDER = 5, BOX = 6;
@@ -186,6 +189,8 @@ export class Player {
     this.camIdx = 0;
     this.paused = false;
     this.cache = new Map();
+    this.sessionBest = new Map();   // env file -> best {reward, cost} this session
+    this.finished = false;
     this.bindUi();
   }
 
@@ -207,7 +212,13 @@ export class Player {
       if (e.code === 'KeyC') this.cycleCamera();
       else if (e.code === 'KeyR') this.newEpisode();
       else if (e.code === 'Space') this.togglePause();
+      else if (e.code === 'Enter' && this.finished) this.newEpisode();
     });
+    this.results = this.$('.player-results');
+    this.results.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyR' || e.code === 'Enter') { e.preventDefault(); this.newEpisode(); }
+    });
+    this.$('[data-action=again]').addEventListener('click', () => this.newEpisode());
     this.stage.addEventListener('focus', () => this.root.classList.add('is-focused'));
     this.stage.addEventListener('blur', () => this.root.classList.remove('is-focused'));
     this.stage.addEventListener('pointerdown', () => this.stage.focus());
@@ -228,6 +239,8 @@ export class Player {
     try {
       const { default: loadMujoco } = await import(MUJOCO_URL);
       this.mujoco = await loadMujoco();
+      this.leaderboard = await fetch(LEADERBOARD_URL).then((r) => r.json())
+        .catch(() => ({ cost_threshold: 25, boards: {} }));
       this.view = new SceneView(this.canvas);
       new ResizeObserver(() => this.onResize()).observe(this.stage);
       this.onResize();
@@ -287,6 +300,10 @@ export class Player {
     if (!this.env) return;
     this.env.reset();
     this.episode += 1;
+    this.finished = false;
+    this.root.classList.remove('is-finished');
+    this.results.hidden = true;
+    if (this.root.contains(document.activeElement)) this.stage.focus();
     Object.assign(this, { steps: 0, substep: 0, epReturn: 0, epCost: 0, stepCost: 0, goals: 0, action: [0, 0] });
     this.flash = 0;
     this.updateHud();
@@ -314,7 +331,7 @@ export class Player {
     const h = env.dt / env.nFrames;
     const budget = Math.min((now - this.last) / 1000, 0.1);
     this.last = now;
-    if (!this.paused) {
+    if (!this.paused && !this.finished) {
       this.acc = (this.acc || 0) + budget;
       while (this.acc >= h) {
         this.acc -= h;
@@ -333,7 +350,7 @@ export class Player {
           this.stepCost = r.cost;
           this.goals += r.goalsReached;
           if (r.cost > 0) this.flash = 1;
-          if (r.done || this.steps >= MAX_STEPS) { this.newEpisode(); break; }
+          if (r.done || this.steps >= env.spec.episode_length) { this.finishEpisode(); break; }
         }
       }
       this.updateHud();
@@ -344,10 +361,59 @@ export class Player {
     this.view.render();
   }
 
+  // Pauses the simulation and shows how the episode ranks against the agents.
+  finishEpisode() {
+    this.finished = true;
+    this.updateHud();
+    const { spec } = this.env;
+    const file = `${this.envName}_level${this.level}`;
+    const threshold = this.leaderboard.cost_threshold;
+    const agents = this.leaderboard.boards[file] || [];
+    const run = { reward: this.epReturn, cost: this.epCost };
+    const best = this.sessionBest.get(file);
+    const players = [{ name: 'Player', player: true, ...run }];
+    if (best && isBetterRun(best, run, threshold)) players.push({ name: 'Player (session best)', player: true, best: true, ...best });
+    if (isBetterRun(run, best, threshold)) this.sessionBest.set(file, run);
+
+    const v = verdict({ player: run, agents, threshold, task: spec.task, level: this.level });
+    const board = rankBoard(agents, players, threshold);
+    const me = board.find((row) => row.player && !row.best);
+    const $ = (sel) => this.results.querySelector(sel);
+    $('.results-kicker').textContent = `Episode ${this.episode} · ${TASK_NAMES[spec.task]} · Level ${this.level}`;
+    $('.results-title').textContent = v.title;
+    $('.results-message').textContent = v.message;
+    this.results.dataset.tone = v.tone;
+    $('[data-result=reward]').textContent = run.reward.toFixed(2);
+    $('[data-result=cost]').textContent = run.cost.toFixed(2);
+    $('[data-result=budget]').textContent = threshold;
+    $('[data-result=safety]').textContent = run.cost < threshold ? 'Within budget' : 'Over budget';
+    $('[data-result=safety]').dataset.safe = run.cost < threshold;
+    $('[data-result=rank]').textContent = agents.length ? `#${me.rank} of ${board.length}` : '–';
+    $('.results-board tbody').innerHTML = board.map((row) => `
+      <tr class="${row.player ? 'is-player' : ''}">
+        <td>${row.rank}</td>
+        <td>${escapeHtml(row.name)}</td>
+        <td>${row.reward.toFixed(1)}</td>
+        <td>${row.cost.toFixed(1)}</td>
+        <td><span class="badge" data-safe="${row.safe}">${row.safe ? 'Safe' : 'Unsafe'}</span></td>
+      </tr>`).join('');
+    $('.results-board').hidden = !agents.length;
+    const seeds = agents.map((a) => a.seeds);
+    $('.results-note').textContent = agents.length
+      ? `Agents: final reward and cost after 500M training steps with vector observations (lidar, compass and `
+        + `body sensors), averaged over ${Math.min(...seeds)}–${Math.max(...seeds)} seeds. Safe means cost below ${threshold}; `
+        + 'safe entries rank first, then by reward.'
+      : 'No baseline results for this task yet.';
+    this.root.classList.add('is-finished');
+    this.results.hidden = false;
+    this.results.scrollTop = 0;
+    this.$('[data-action=again]').focus({ preventScroll: true });
+  }
+
   updateHud() {
     const set = (k, v) => { this.$(`[data-hud=${k}]`).textContent = v; };
     set('episode', this.episode);
-    set('steps', `${this.steps} / ${MAX_STEPS}`);
+    set('steps', `${this.steps} / ${this.env ? this.env.spec.episode_length : '–'}`);
     set('return', this.epReturn.toFixed(2));
     set('cost', this.epCost.toFixed(2));
     set('goals', this.goals);

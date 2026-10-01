@@ -119,11 +119,13 @@
   <!-- ============================== PLAY ============================== -->
   <section class="section" id="play">
     <div class="section-head">
-      <h2>Try it yourself</h2>
+      <p class="eyebrow eyebrow-left">Human vs. SafeRL</p>
+      <h2>Can you beat the agents?</h2>
       <p>
-        Drive the Point agent through the four navigation suites. Collect reward, and watch the
-        <span class="tag tag-cost">cost</span> counter: every hazard you graze is a constraint violation. Can you beat
-        a cost budget of <b>25</b> per episode, the threshold used in the paper?
+        Put your own safe policy to the test. Drive the Point agent through a full episode of any navigation suite and
+        see where you land on the leaderboard against the eight baselines from the paper. Collect reward, but watch
+        the <span class="tag tag-cost">cost</span> counter: the agents had to keep it under a budget of <b>25</b>
+        per episode, and so do you.
       </p>
     </div>
 
@@ -210,8 +212,32 @@
               the yellow boundary costs 0.1 per step; levels 2–3 add hazards inside.</p>
           </div>
         </aside>
+
+        <div class="player-results" hidden tabindex="-1" aria-live="polite">
+          <div class="results-card">
+            <p class="results-kicker"></p>
+            <h3 class="results-title"></h3>
+            <p class="results-message"></p>
+            <dl class="results-stats">
+              <div><dt>Your return</dt><dd data-result="reward"></dd></div>
+              <div><dt>Your cost</dt><dd><span data-result="cost"></span> <small>/ <span data-result="budget"></span></small></dd></div>
+              <div><dt>Safety</dt><dd data-result="safety"></dd></div>
+              <div><dt>Rank</dt><dd data-result="rank"></dd></div>
+            </dl>
+            <div class="results-table">
+              <table class="results-board">
+                <thead><tr><th>#</th><th>Policy</th><th>Return</th><th>Cost</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="results-note"></p>
+            <button class="btn btn-primary" data-action="again">Play again <kbd>R</kbd></button>
+          </div>
+        </div>
       </div>
       <p class="player-note">
+        An episode lasts as long as in training: 1000 steps (80&nbsp;s), or 2000 steps (160&nbsp;s) for Push. Use
+        whichever camera you like; the agents never see pixels, only lidar, compass and body sensors.
         The browser port runs the same MuJoCo models and task logic as
         <a href="https://github.com/TTomilin/CRAX/blob/main/crax/play/play.py"><code>python -m crax.play</code></a>,
         but on CPU MuJoCo instead of MJX, so trajectories can differ slightly from the benchmark.
