@@ -294,6 +294,9 @@ class VisionMLP(linen.Module):
     )(data)
     if not self.policy_head:
       return latent
+    if self.layer_norm:
+        latent_layernorm = linen.LayerNorm()
+        latent = latent_layernorm(latent)
     if self.state_obs_key:
       latent = jnp.concatenate(
           [latent, data[self.state_obs_key]], axis=-1
@@ -327,6 +330,9 @@ class VisionMLPHead(linen.Module):
   @linen.compact
   def __call__(self, data: dict):
     hidden = data[VISION_LATENT_KEY]
+    if self.layer_norm:
+        latent_layernorm = linen.LayerNorm()
+        hidden = latent_layernorm(hidden)
     if self.state_obs_key:
       hidden = jnp.concatenate([hidden, data[self.state_obs_key]], axis=-1)
     return MLP(
@@ -628,6 +634,9 @@ class VisionQMLP(linen.Module):
         pixel_keys=self.pixel_keys,
         state_obs_key=self.state_obs_key,
     )(data)
+    if self.layer_norm:
+        latent_layernorm = linen.LayerNorm()
+        latent = latent_layernorm(latent)
     if self.state_obs_key:
       latent = jnp.concatenate([latent, data[self.state_obs_key]], axis=-1)
     hidden = jnp.concatenate([latent, actions], axis=-1)
