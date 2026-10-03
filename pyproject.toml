@@ -39,6 +39,7 @@ dependencies = [
     "numpy",
     "Pillow",
     "typing-extensions",
+    "wandb>=0.30.0",
 ]
 
 [project.optional-dependencies]
