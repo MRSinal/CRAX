@@ -50,6 +50,7 @@ def make_ppo_networks_vision(
     policy_pixel_keys: Optional[Sequence[str]] = None,
     value_pixel_keys: Optional[Sequence[str]] = None,
     cost_value_pixel_keys: Optional[Sequence[str]] = None,
+    gap_lambda: Optional[float] = None,
 ) -> PPONetworks:
     """Make Vision PPO networks with preprocessor.
 
@@ -82,6 +83,9 @@ def make_ppo_networks_vision(
         cost_value_pixel_keys: Cameras routed to the cost value network.
             Heterogeneous routing (e.g. a privileged camera the cost critic
             sees but the actor does not) requires `share_encoder=False`.
+        gap_lambda: Policy head only. None keeps the raw state. A float adds
+            a proprio MLP with GAP strength gap_lambda before fusion
+            (networks._state_features). The critics always read the raw state.
 
     Returns:
         PPONetworks with policy, value, and optionally cost_value networks.
@@ -146,6 +150,7 @@ def make_ppo_networks_vision(
             activation=activation,
             hidden_layer_sizes=policy_hidden_layer_sizes,
             state_obs_key=policy_obs_key,
+            gap_lambda=gap_lambda,
         )
 
         value_network = networks.make_value_head_network_vision(
@@ -178,6 +183,7 @@ def make_ppo_networks_vision(
             state_obs_key=policy_obs_key,
             normalise_channels=normalise_channels,
             pixel_keys=policy_pixel_keys,
+            gap_lambda=gap_lambda,
         )
 
         value_network = networks.make_value_network_vision(

@@ -77,7 +77,8 @@ def custom_progress_fn(num_steps: int, metrics: Dict[str, Any], use_wandb: bool 
         value = _mean_value(value)
         # Print only key categories to keep console light
         # "_ev" keeps the metric for the observation routing ablation in the paper (value_ev / cost_value_ev)
-        if verbose and any(tok in key for tok in ("lambda", "cost", "constraint", "reward", "_ev")):
+        # "gap_" and "sps" show the GAP phase metrics and the training speed in Slurm logs
+        if verbose and any(tok in key for tok in ("lambda", "cost", "constraint", "reward", "_ev", "gap_", "sps")):
             print(f"  {key}: {value}")
         log_data[key] = value
 
