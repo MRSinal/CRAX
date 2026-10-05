@@ -40,11 +40,8 @@ dependencies = [
     "Pillow",
     "typing-extensions",
     "wandb>=0.30.0",
-<<<<<<< HEAD
-=======
     "imageio>=2.38.0",
     "matplotlib>=3.10.9",
->>>>>>> 7f0c12f (Batch file for gpu server)
 ]
 
 [project.optional-dependencies]
