@@ -127,12 +127,22 @@ class SafePush(PipelineEnv, ABC):
             hazard_specs: Optional[List[Dict]] = None,
             # Block surface type: "stone" (moderate friction) or "icey" (very slippery, default)
             block_surface: str = "stone",
+            include_hazard_lidar: bool = True,
+            include_goal_lidar: bool = True,
+            include_goal_comp: bool = True,
+            include_hazard_comp: bool = True,
             # Debug
             debug: bool = False,
             **kwargs,
     ):
         # Store debug flag early for use in initialization
         self._debug = debug
+
+        # Push obs included params
+        self._include_hazard_lidar = include_hazard_lidar
+        self._include_goal_lidar = include_goal_lidar
+        self._include_goal_comp = include_goal_comp
+        self._include_hazard_comp = include_hazard_comp
 
         # Use defaults from abstract properties if not provided
         if healthy_z_range is None:
@@ -142,6 +152,8 @@ class SafePush(PipelineEnv, ABC):
 
         # Get agent XML file from abstract property
         base_agent_file_name = self.agent_xml_file
+
+
 
         # Build default hazard specs if none provided
         if hazard_specs is None:
@@ -953,7 +965,8 @@ class SafePush(PipelineEnv, ABC):
 
         # 3. Create compass observation (agent-centric) - agent to goal
         agent_centric_rel_goal_xy = jp.array([agent_centric_dx_goal, agent_centric_dy_goal])
-        goal_comp = agent_centric_rel_goal_xy / (safe_norm(agent_centric_rel_goal_xy) + 1e-8)
+        if self._include_goal_comp:
+            goal_comp = agent_centric_rel_goal_xy / (safe_norm(agent_centric_rel_goal_xy) + 1e-8)
 
         # 4. Block compasses (agent-centric)
         # 4a. Agent-to-block compass
@@ -988,215 +1001,223 @@ class SafePush(PipelineEnv, ABC):
         # === GOAL LIDAR ===
         # Use the first goal for the compass to avoid changing obs semantics. For lidar, accumulate all goals.
         bin_size = (2 * jp.pi) / _lidar_num_bins
+        if self._include_goal_lidar:
+            def process_goal_lidar(carry, goal_mocap_id):
+                """Accumulate lidar signal from a single goal."""
+                goal_lidar, agent_pos, cos_a, sin_a = carry
 
-        def process_goal_lidar(carry, goal_mocap_id):
-            """Accumulate lidar signal from a single goal."""
-            goal_lidar, agent_pos, cos_a, sin_a = carry
-
-            # Get goal position or a dummy if invalid
-            goal_pos_3d = jp.where(
-                goal_mocap_id >= 0,
-                data.mocap_pos[goal_mocap_id],
-                jp.array([0.0, 0.0, 0.0])
-            )
-
-            # Relative vector in world frame
-            rel_goal_pos_3d_world = goal_pos_3d - agent_pos
-            world_dx_goal = rel_goal_pos_3d_world[0]
-            world_dy_goal = rel_goal_pos_3d_world[1]
-
-            # Agent-centric transform
-            agent_centric_dx_goal = world_dx_goal * cos_a + world_dy_goal * sin_a
-            agent_centric_dy_goal = -world_dx_goal * sin_a + world_dy_goal * cos_a
-
-            # Distance and angle
-            dist_goal = safe_norm(jp.array([agent_centric_dx_goal, agent_centric_dy_goal]))
-            angle_goal = jp.arctan2(agent_centric_dy_goal, agent_centric_dx_goal)
-            angle_goal = (angle_goal + 2 * jp.pi) % (2 * jp.pi)
-
-            # Bin index
-            bin_idx_float_goal = angle_goal / bin_size
-            bin_idx_goal = jp.floor(bin_idx_float_goal)
-            bin_idx_goal = jp.minimum(bin_idx_goal, _lidar_num_bins - 1).astype(int)
-
-            # Sensor value with range limit
-            sensor_val_goal = jp.maximum(0.0, _lidar_max_dist - dist_goal) / _lidar_max_dist
-            sensor_val_goal = jp.where(dist_goal > _lidar_max_dist, 0.0, sensor_val_goal)
-
-            # Zero out if mocap id is invalid
-            sensor_val_goal = jp.where(goal_mocap_id >= 0, sensor_val_goal, 0.0)
-
-            # Primary bin: take max across goals
-            goal_lidar = goal_lidar.at[bin_idx_goal].set(
-                jp.maximum(goal_lidar[bin_idx_goal], sensor_val_goal)
-            )
-
-            if _lidar_alias:
-                # Alias to neighbors
-                alias_factor_goal = bin_idx_float_goal - bin_idx_goal
-
-                bin_plus_idx_goal = (bin_idx_goal + 1) % _lidar_num_bins
-                goal_lidar = goal_lidar.at[bin_plus_idx_goal].set(
-                    jp.maximum(goal_lidar[bin_plus_idx_goal], alias_factor_goal * sensor_val_goal)
+                # Get goal position or a dummy if invalid
+                goal_pos_3d = jp.where(
+                    goal_mocap_id >= 0,
+                    data.mocap_pos[goal_mocap_id],
+                    jp.array([0.0, 0.0, 0.0])
                 )
 
-                bin_minus_idx_goal = (bin_idx_goal - 1 + _lidar_num_bins) % _lidar_num_bins
-                goal_lidar = goal_lidar.at[bin_minus_idx_goal].set(
-                    jp.maximum(goal_lidar[bin_minus_idx_goal], (1.0 - alias_factor_goal) * sensor_val_goal)
+                # Relative vector in world frame
+                rel_goal_pos_3d_world = goal_pos_3d - agent_pos
+                world_dx_goal = rel_goal_pos_3d_world[0]
+                world_dy_goal = rel_goal_pos_3d_world[1]
+
+                # Agent-centric transform
+                agent_centric_dx_goal = world_dx_goal * cos_a + world_dy_goal * sin_a
+                agent_centric_dy_goal = -world_dx_goal * sin_a + world_dy_goal * cos_a
+
+                # Distance and angle
+                dist_goal = safe_norm(jp.array([agent_centric_dx_goal, agent_centric_dy_goal]))
+                angle_goal = jp.arctan2(agent_centric_dy_goal, agent_centric_dx_goal)
+                angle_goal = (angle_goal + 2 * jp.pi) % (2 * jp.pi)
+
+                # Bin index
+                bin_idx_float_goal = angle_goal / bin_size
+                bin_idx_goal = jp.floor(bin_idx_float_goal)
+                bin_idx_goal = jp.minimum(bin_idx_goal, _lidar_num_bins - 1).astype(int)
+
+                # Sensor value with range limit
+                sensor_val_goal = jp.maximum(0.0, _lidar_max_dist - dist_goal) / _lidar_max_dist
+                sensor_val_goal = jp.where(dist_goal > _lidar_max_dist, 0.0, sensor_val_goal)
+
+                # Zero out if mocap id is invalid
+                sensor_val_goal = jp.where(goal_mocap_id >= 0, sensor_val_goal, 0.0)
+
+                # Primary bin: take max across goals
+                goal_lidar = goal_lidar.at[bin_idx_goal].set(
+                    jp.maximum(goal_lidar[bin_idx_goal], sensor_val_goal)
                 )
 
-            return (goal_lidar, agent_pos, cos_a, sin_a), None
+                if _lidar_alias:
+                    # Alias to neighbors
+                    alias_factor_goal = bin_idx_float_goal - bin_idx_goal
 
-        # Scan over all goals and aggregate their contributions
-        goal_mocap_ids_array = jp.array(self._goal_mocap_ids)
-        init_goal_carry = (goal_lidar_obs, agent_pos, cos_a, sin_a)
-        (goal_lidar_obs, _, _, _), _ = jax.lax.scan(
-            process_goal_lidar, init_goal_carry, goal_mocap_ids_array
-        )
+                    bin_plus_idx_goal = (bin_idx_goal + 1) % _lidar_num_bins
+                    goal_lidar = goal_lidar.at[bin_plus_idx_goal].set(
+                        jp.maximum(goal_lidar[bin_plus_idx_goal], alias_factor_goal * sensor_val_goal)
+                    )
 
+                    bin_minus_idx_goal = (bin_idx_goal - 1 + _lidar_num_bins) % _lidar_num_bins
+                    goal_lidar = goal_lidar.at[bin_minus_idx_goal].set(
+                        jp.maximum(goal_lidar[bin_minus_idx_goal], (1.0 - alias_factor_goal) * sensor_val_goal)
+                    )
+
+                return (goal_lidar, agent_pos, cos_a, sin_a), None
+
+            # Scan over all goals and aggregate their contributions
+            goal_mocap_ids_array = jp.array(self._goal_mocap_ids)
+            init_goal_carry = (goal_lidar_obs, agent_pos, cos_a, sin_a)
+            (goal_lidar_obs, _, _, _), _ = jax.lax.scan(
+                process_goal_lidar, init_goal_carry, goal_mocap_ids_array
+            )
         # === HAZARD LIDAR ===
         # Process hazards for the hazard lidar
-        def process_hazard_lidar(carry, hazard_mocap_id):
-            """Process a single hazard for the hazard lidar."""
-            hazard_lidar, agent_pos, agent_z_angle, cos_a, sin_a = carry
+        if self._include_hazard_lidar:
+            def process_hazard_lidar(carry, hazard_mocap_id):
+                """Process a single hazard for the hazard lidar."""
+                hazard_lidar, agent_pos, agent_z_angle, cos_a, sin_a = carry
 
-            # Get hazard position from mocap if valid ID
-            hazard_pos_3d = jp.where(
-                hazard_mocap_id >= 0,
-                data.mocap_pos[hazard_mocap_id],
-                jp.array([0.0, 0.0, 0.0])  # Default position for invalid IDs
-            )
-
-            # Calculate relative position to hazard (world frame)
-            rel_hazard_pos_3d_world = hazard_pos_3d - agent_pos
-
-            # Transform world-frame relative vector to agent's local frame
-            world_dx_hazard = rel_hazard_pos_3d_world[0]
-            world_dy_hazard = rel_hazard_pos_3d_world[1]
-
-            agent_centric_dx_hazard = world_dx_hazard * cos_a + world_dy_hazard * sin_a
-            agent_centric_dy_hazard = -world_dx_hazard * sin_a + world_dy_hazard * cos_a
-
-            # Calculate distance and angle for this hazard
-            dist_hazard = safe_norm(jp.array([agent_centric_dx_hazard, agent_centric_dy_hazard]))
-            angle_hazard = jp.arctan2(agent_centric_dy_hazard, agent_centric_dx_hazard)
-            angle_hazard = (angle_hazard + 2 * jp.pi) % (2 * jp.pi)
-
-            # Determine which bin the hazard falls into
-            bin_idx_float_hazard = angle_hazard / bin_size
-            bin_idx_hazard = jp.floor(bin_idx_float_hazard)
-            bin_idx_hazard = jp.minimum(bin_idx_hazard, _lidar_num_bins - 1).astype(int)
-
-            # Calculate sensor reading for hazard
-            sensor_val_hazard = jp.maximum(0.0, _lidar_max_dist - dist_hazard) / _lidar_max_dist
-            sensor_val_hazard = jp.where(dist_hazard > _lidar_max_dist, 0.0, sensor_val_hazard)
-
-            # Only process if hazard ID is valid (>= 0)
-            sensor_val_hazard = jp.where(hazard_mocap_id >= 0, sensor_val_hazard, 0.0)
-
-            # Update the hazard Lidar observation for the primary bin
-            hazard_lidar = hazard_lidar.at[bin_idx_hazard].set(
-                jp.maximum(hazard_lidar[bin_idx_hazard], sensor_val_hazard)
-            )
-
-            if _lidar_alias:
-                # Calculate alias interpolation factor for hazard
-                alias_factor_hazard = bin_idx_float_hazard - bin_idx_hazard
-
-                # Bin plus one (wraps around)
-                bin_plus_idx_hazard = (bin_idx_hazard + 1) % _lidar_num_bins
-                hazard_lidar = hazard_lidar.at[bin_plus_idx_hazard].set(
-                    jp.maximum(hazard_lidar[bin_plus_idx_hazard], alias_factor_hazard * sensor_val_hazard)
+                # Get hazard position from mocap if valid ID
+                hazard_pos_3d = jp.where(
+                    hazard_mocap_id >= 0,
+                    data.mocap_pos[hazard_mocap_id],
+                    jp.array([0.0, 0.0, 0.0])  # Default position for invalid IDs
                 )
 
-                # Bin minus one (wraps around)
-                bin_minus_idx_hazard = (bin_idx_hazard - 1 + _lidar_num_bins) % _lidar_num_bins
-                hazard_lidar = hazard_lidar.at[bin_minus_idx_hazard].set(
-                    jp.maximum(hazard_lidar[bin_minus_idx_hazard], (1.0 - alias_factor_hazard) * sensor_val_hazard)
+                # Calculate relative position to hazard (world frame)
+                rel_hazard_pos_3d_world = hazard_pos_3d - agent_pos
+
+                # Transform world-frame relative vector to agent's local frame
+                world_dx_hazard = rel_hazard_pos_3d_world[0]
+                world_dy_hazard = rel_hazard_pos_3d_world[1]
+
+                agent_centric_dx_hazard = world_dx_hazard * cos_a + world_dy_hazard * sin_a
+                agent_centric_dy_hazard = -world_dx_hazard * sin_a + world_dy_hazard * cos_a
+
+                # Calculate distance and angle for this hazard
+                dist_hazard = safe_norm(jp.array([agent_centric_dx_hazard, agent_centric_dy_hazard]))
+                angle_hazard = jp.arctan2(agent_centric_dy_hazard, agent_centric_dx_hazard)
+                angle_hazard = (angle_hazard + 2 * jp.pi) % (2 * jp.pi)
+
+                # Determine which bin the hazard falls into
+                bin_idx_float_hazard = angle_hazard / bin_size
+                bin_idx_hazard = jp.floor(bin_idx_float_hazard)
+                bin_idx_hazard = jp.minimum(bin_idx_hazard, _lidar_num_bins - 1).astype(int)
+
+                # Calculate sensor reading for hazard
+                sensor_val_hazard = jp.maximum(0.0, _lidar_max_dist - dist_hazard) / _lidar_max_dist
+                sensor_val_hazard = jp.where(dist_hazard > _lidar_max_dist, 0.0, sensor_val_hazard)
+
+                # Only process if hazard ID is valid (>= 0)
+                sensor_val_hazard = jp.where(hazard_mocap_id >= 0, sensor_val_hazard, 0.0)
+
+                # Update the hazard Lidar observation for the primary bin
+                hazard_lidar = hazard_lidar.at[bin_idx_hazard].set(
+                    jp.maximum(hazard_lidar[bin_idx_hazard], sensor_val_hazard)
                 )
 
-            return (hazard_lidar, agent_pos, agent_z_angle, cos_a, sin_a), None
+                if _lidar_alias:
+                    # Calculate alias interpolation factor for hazard
+                    alias_factor_hazard = bin_idx_float_hazard - bin_idx_hazard
 
-        # Process all hazards using scan to handle variable number of hazards
-        hazard_mocap_ids_array = jp.array(self._hazard_mocap_ids, dtype=jp.int32)
-        init_carry = (hazard_lidar_obs, agent_pos, agent_z_angle, cos_a, sin_a)
-        (hazard_lidar_obs, _, _, _, _), _ = jax.lax.scan(
-            process_hazard_lidar, init_carry, hazard_mocap_ids_array
-        )
+                    # Bin plus one (wraps around)
+                    bin_plus_idx_hazard = (bin_idx_hazard + 1) % _lidar_num_bins
+                    hazard_lidar = hazard_lidar.at[bin_plus_idx_hazard].set(
+                        jp.maximum(hazard_lidar[bin_plus_idx_hazard], alias_factor_hazard * sensor_val_hazard)
+                    )
+
+                    # Bin minus one (wraps around)
+                    bin_minus_idx_hazard = (bin_idx_hazard - 1 + _lidar_num_bins) % _lidar_num_bins
+                    hazard_lidar = hazard_lidar.at[bin_minus_idx_hazard].set(
+                        jp.maximum(hazard_lidar[bin_minus_idx_hazard], (1.0 - alias_factor_hazard) * sensor_val_hazard)
+                    )
+
+                return (hazard_lidar, agent_pos, agent_z_angle, cos_a, sin_a), None
+
+            # Process all hazards using scan to handle variable number of hazards
+            hazard_mocap_ids_array = jp.array(self._hazard_mocap_ids, dtype=jp.int32)
+            init_carry = (hazard_lidar_obs, agent_pos, agent_z_angle, cos_a, sin_a)
+            (hazard_lidar_obs, _, _, _, _), _ = jax.lax.scan(
+                process_hazard_lidar, init_carry, hazard_mocap_ids_array
+            )
 
         # === HAZARD COMPASSES ===
         # Create individual compass observations for each hazard
-        def compute_compass_for_hazard(mocap_idx):
-            """Compute compass for a specific mocap index."""
-            # Handle invalid mocap index
-            hazard_pos_3d = jp.where(
-                mocap_idx >= 0,
-                data.mocap_pos[mocap_idx],
-                jp.array([0.0, 0.0, 0.0])
-            )
+        if self._include_hazard_comp:
+            def compute_compass_for_hazard(mocap_idx):
+                """Compute compass for a specific mocap index."""
+                # Handle invalid mocap index
+                hazard_pos_3d = jp.where(
+                    mocap_idx >= 0,
+                    data.mocap_pos[mocap_idx],
+                    jp.array([0.0, 0.0, 0.0])
+                )
 
-            # Calculate relative position to hazard (world frame)
-            rel_hazard_pos_3d_world = hazard_pos_3d - agent_pos
+                # Calculate relative position to hazard (world frame)
+                rel_hazard_pos_3d_world = hazard_pos_3d - agent_pos
 
-            # Transform world-frame relative vector to agent's local frame
-            world_dx_hazard = rel_hazard_pos_3d_world[0]
-            world_dy_hazard = rel_hazard_pos_3d_world[1]
+                # Transform world-frame relative vector to agent's local frame
+                world_dx_hazard = rel_hazard_pos_3d_world[0]
+                world_dy_hazard = rel_hazard_pos_3d_world[1]
 
-            agent_centric_dx_hazard = world_dx_hazard * cos_a + world_dy_hazard * sin_a
-            agent_centric_dy_hazard = -world_dx_hazard * sin_a + world_dy_hazard * cos_a
+                agent_centric_dx_hazard = world_dx_hazard * cos_a + world_dy_hazard * sin_a
+                agent_centric_dy_hazard = -world_dx_hazard * sin_a + world_dy_hazard * cos_a
 
-            # Create normalized compass observation (agent-centric)
-            rel_vec = jp.array([agent_centric_dx_hazard, agent_centric_dy_hazard])
-            compass = rel_vec / (safe_norm(rel_vec) + 1e-8)
+                # Create normalized compass observation (agent-centric)
+                rel_vec = jp.array([agent_centric_dx_hazard, agent_centric_dy_hazard])
+                compass = rel_vec / (safe_norm(rel_vec) + 1e-8)
 
-            # Return zero compass if invalid mocap index
-            return jp.where(mocap_idx >= 0, compass, jp.zeros(2))
+                # Return zero compass if invalid mocap index
+                return jp.where(mocap_idx >= 0, compass, jp.zeros(2))
 
-        # --- choose closest-k hazards for compasses (fixed-size) ---
-        all_hz_ids = jp.array(self._hazard_mocap_ids, dtype=jp.int32)  # (H,)
-        H = all_hz_ids.shape[0]
+            # --- choose closest-k hazards for compasses (fixed-size) ---
+            all_hz_ids = jp.array(self._hazard_mocap_ids, dtype=jp.int32)  # (H,)
+            H = all_hz_ids.shape[0]
 
-        k = int(self._hazard_compass_k)  # Python int => static
-        k_eff = min(k, H)  # Python int => static
+            k = int(self._hazard_compass_k)  # Python int => static
+            k_eff = min(k, H)  # Python int => static
 
-        def _pick_and_pad():
-            all_hz_pos = data.mocap_pos[all_hz_ids]  # (H,3)
-            rel_xy = all_hz_pos[:, :2] - agent_pos[:2]  # (H,2)
-            d2 = jp.sum(rel_xy * rel_xy, axis=1)  # (H,)
-            order = jp.argsort(d2)  # (H,)
+            def _pick_and_pad():
+                all_hz_pos = data.mocap_pos[all_hz_ids]  # (H,3)
+                rel_xy = all_hz_pos[:, :2] - agent_pos[:2]  # (H,2)
+                d2 = jp.sum(rel_xy * rel_xy, axis=1)  # (H,)
+                order = jp.argsort(d2)  # (H,)
 
-            closest = all_hz_ids[order[:k_eff]]  # (k_eff,) static slice ✅
+                closest = all_hz_ids[order[:k_eff]]  # (k_eff,) static slice ✅
 
-            if k_eff < k:
-                pad = -jp.ones((k - k_eff,), dtype=jp.int32)
-                closest = jp.concatenate([closest, pad], axis=0)  # (k,)
-            return closest
+                if k_eff < k:
+                    pad = -jp.ones((k - k_eff,), dtype=jp.int32)
+                    closest = jp.concatenate([closest, pad], axis=0)  # (k,)
+                return closest
 
-        def _no_hazards():
-            return -jp.ones((k,), dtype=jp.int32)
+            def _no_hazards():
+                return -jp.ones((k,), dtype=jp.int32)
 
-        closest_ids = jax.lax.cond(H > 0, lambda _: _pick_and_pad(), lambda _: _no_hazards(), operand=None)
+            closest_ids = jax.lax.cond(H > 0, lambda _: _pick_and_pad(), lambda _: _no_hazards(), operand=None)
 
-        hazard_compasses = jax.vmap(compute_compass_for_hazard)(closest_ids)  # (k,2)
-        hazard_compasses_flat = hazard_compasses.reshape((-1,))  # (2k,)
+            hazard_compasses = jax.vmap(compute_compass_for_hazard)(closest_ids)  # (k,2)
+            hazard_compasses_flat = hazard_compasses.reshape((-1,))  # (2k,)
 
         # Build observation with separate goal and hazard lidars plus individual hazard compasses
         # Added: block observations for push task
-        obs = jp.concatenate([
-            accelerometer,  # (3,)
-            velocimeter,  # (3,)
-            gyro,  # (3,)
-            magnetometer,  # (3,)
-            goal_lidar_obs,  # (16,) - Goal Lidar
-            hazard_lidar_obs,  # (16,) - Hazard Lidar
-            goal_comp,  # (2,) - Goal compass (agent to goal)
-            hazard_compasses_flat,  # (16,) - Individual hazard compasses (8 hazards * 2 each)
+        obs_parts = [
+            accelerometer, # (3,)
+            velocimeter, # (3,)
+            gyro, # (3,)
+            magnetometer, # (3,)
+        ]
+        if self._include_goal_lidar:
+            obs_parts.append(goal_lidar_obs) # (16,) - Goal Lidar
+        if self._include_hazard_lidar:
+            obs_parts.append(hazard_lidar_obs) # (16,) - Hazard Lidar
+        if self._include_goal_comp:
+            obs_parts.append(goal_comp) # (2,) - Goal compass
+        if self._include_hazard_comp:
+            obs_parts.append(hazard_compasses_flat) # (16,) - Individual hazard compasses (8 hazards * 2 each)
+        obs_parts += [
             # Block observations (new for push task)
             agent_to_block_comp,  # (2,) - Compass from agent to block
             block_to_goal_comp,  # (2,) - Compass from block to goal
             jp.array([agent_to_block_dist]),  # (1,) - Distance from agent to block (normalized)
             jp.array([block_to_goal_dist]),  # (1,) - Distance from block to goal (normalized)
-        ])
+        ]
+        obs = jp.concatenate(obs_parts)
 
         return obs
 
@@ -1220,9 +1241,9 @@ class SafePush(PipelineEnv, ABC):
         """Returns the size of the observation vector."""
         return (
                 12 +  # Sensor data (3 each for accel, vel, gyro, mag)
-                self._lidar_num_bins * 2 +  # Goal and hazard lidars
-                2 +  # Goal compass (agent to goal)
-                self._hazard_compass_k * 2 +  # Hazard compasses
+                self._lidar_num_bins * (self._include_goal_lidar + self._include_hazard_lidar) +
+                2 * self._include_goal_comp +
+                self._hazard_compass_k * 2 * self._include_hazard_comp +
                 # Block observations (new for push task)
                 2 +  # Agent-to-block compass
                 2 +  # Block-to-goal compass

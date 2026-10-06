@@ -136,6 +136,14 @@ def main():
     privilege_mode = config.vision_privilege_mode
     cameras, pixel_routing = resolve_privilege_routing(config, alg_name)
 
+    # GAP flags (see training/networks.py, _state_features)
+    if config.proprio_mlp and not (config.vision and config.vision_obs_mode == 'pixels+state'):
+        raise ValueError("--proprio_mlp needs --vision --vision_obs_mode pixels+state.")
+    if (config.gap_lambda or config.proprio_dropout) and not config.proprio_mlp:
+        raise ValueError("--gap_lambda and --proprio_dropout need --proprio_mlp.")
+    if config.gap_random_phase and not config.gap_lambda:
+        raise ValueError("--gap_random_phase needs --gap_lambda > 0.")
+
     # Setup GPU environment
     setup_gpu_environment(vision=config.vision)
 
@@ -157,6 +165,7 @@ def main():
                 width=config.vision_width,
                 obs_mode=config.vision_obs_mode,
                 frame_stack=config.vision_frame_stack,
+                gap_phase_dist=config.gap_phase_dist if config.gap_lambda > 0 else None,
             )
             if privilege_mode != 'none':
                 # For multi-camera rendering
@@ -283,6 +292,8 @@ def main():
             network_routing = dict(pixel_routing)
             network_routing.setdefault('policy_obs_key', state_obs_key)
             network_routing.setdefault('value_obs_key', state_obs_key)
+            if config.proprio_mlp:
+                network_routing['gap_lambda'] = config.gap_lambda
             train_kwargs['network_factory'] = make_vision_network_factory(
                 alg_name,
                 **network_routing,
@@ -298,6 +309,8 @@ def main():
                     f"support pixel observations (its train() has no "
                     f"'vision_kwargs' parameter)."
                 )
+            if config.proprio_mlp and 'gap_frac' not in train_kwargs:
+                raise ValueError(f"--proprio_mlp and GAP are implemented for ppo, ppo_lag and crpo only, got '{alg_name}'.")
 
         # Create the training function
         train_fn = functools.partial(train_fn_base, **train_kwargs)

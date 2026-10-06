@@ -236,6 +236,23 @@ def add_shared_training_args(parser: argparse.ArgumentParser) -> argparse.Argume
                              "state vector, requiring --vision_obs_mode pixels+state). "
                              "Any mode other than 'none' forces per-head (unshared) CNN encoders so the actor is "
                              "provably blind to the privileged view.")
+    parser.add_argument("--proprio_mlp", action="store_true",
+                        help="Encode the state with a small MLP in the policy head before it is joined with the CNN "
+                             "latent (the critics keep the raw state). Needs --vision_obs_mode pixels+state. Pass "
+                             "--env_kwargs to drop lidar and compass so the state is proprio only.")
+    parser.add_argument("--gap_lambda", type=float, default=0.0,
+                        help="GAP strength in [0, 1]. The gradient into the policy proprio MLP is scaled per sample "
+                             "by 1 - gap_lambda * phase, where phase is the closeness of the nearest hazard in camera "
+                             "view. 0 gives the matched baseline. Needs --proprio_mlp.")
+    parser.add_argument("--gap_phase_dist", type=float, default=1.0,
+                        help="Distance in metres at which the GAP phase reaches 0.")
+    parser.add_argument("--gap_frac", type=float, default=0.5,
+                        help="Share of training with GAP on. The phase is set to 0 afterwards.")
+    parser.add_argument("--gap_random_phase", action="store_true",
+                        help="Control for GAP. The phase values are shuffled across the samples of each batch.")
+    parser.add_argument("--proprio_dropout", type=float, default=0.0,
+                        help="Proprio dropout baseline. Zero the policy proprio MLP output for this share of training "
+                             "samples. Needs --proprio_mlp.")
 
     # --- Video Recording ---
     parser.add_argument("--cameras", type=str, nargs="+", default=["fixedfar", "vision"], help="Camera names/ids")
