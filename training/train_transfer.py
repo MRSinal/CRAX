@@ -83,6 +83,7 @@ def main():
                 'ppo',  # unsafe phase uses base PPO
                 policy_obs_key=state_obs_key,
                 value_obs_key=state_obs_key,
+                layer_norm=args.vision_layer_norm,
             )
             cfg['augment_pixels'] = args.vision_augment
 

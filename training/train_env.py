@@ -283,6 +283,13 @@ def main():
             network_routing = dict(pixel_routing)
             network_routing.setdefault('policy_obs_key', state_obs_key)
             network_routing.setdefault('value_obs_key', state_obs_key)
+            # The SAC builders name their layer-norm toggles per-head, the PPO
+            # family uses a single `layer_norm`; map the one CLI flag to each.
+            if alg_name in {'sac', 'sac_lag', 'sac_pid'}:
+                network_routing['policy_network_layer_norm'] = config.vision_layer_norm
+                network_routing['q_network_layer_norm'] = config.vision_layer_norm
+            else:
+                network_routing['layer_norm'] = config.vision_layer_norm
             train_kwargs['network_factory'] = make_vision_network_factory(
                 alg_name,
                 **network_routing,

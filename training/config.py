@@ -216,6 +216,9 @@ def add_shared_training_args(parser: argparse.ArgumentParser) -> argparse.Argume
     parser.add_argument("--vision_frame_stack", type=int, default=1, help="Number of frames to stack channel-wise")
     parser.add_argument("--vision_augment", type=bool_type, nargs="?", const=True, default=True,
                         help="DrQ-style random translation of pixel observations during SGD.")
+    parser.add_argument("--vision_layer_norm", type=bool_type, nargs="?", const=True, default=False,
+                        help="Enable LayerNorm in the vision policy/value/Q heads (applied to both "
+                             "actor and critic sides).")
     parser.add_argument("--vision_independent_encoders", action="store_true",
                         help="Use separate actor, reward-value and cost-value vision encoders even without "
                              "privileged inputs. This is required for the encoder-matched ego baseline in "

@@ -101,10 +101,18 @@ def main():
             train_kwargs['vision'] = True
             train_kwargs['vision_kwargs'] = vision_kwargs
             state_obs_key = 'state' if config.vision_obs_mode == 'pixels+state' else ''
+            if alg_name in {'sac', 'sac_lag', 'sac_pid'}:
+                layer_norm_kwargs = dict(
+                    policy_network_layer_norm=config.vision_layer_norm,
+                    q_network_layer_norm=config.vision_layer_norm,
+                )
+            else:
+                layer_norm_kwargs = dict(layer_norm=config.vision_layer_norm)
             train_kwargs['network_factory'] = make_vision_network_factory(
                 alg_name,
                 policy_obs_key=state_obs_key,
                 value_obs_key=state_obs_key,
+                **layer_norm_kwargs,
             )
             train_kwargs['augment_pixels'] = config.vision_augment
 

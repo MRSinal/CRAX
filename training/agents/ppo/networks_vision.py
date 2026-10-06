@@ -139,7 +139,6 @@ def make_ppo_networks_vision(
             None, dummy_encoder_params, dummy_pixel_obs
         ).shape[-1]
 
-        # TODO: Pass layer_norm
         policy_network = networks.make_policy_head_network_vision(
             output_size=parametric_action_distribution.param_size,
             observation_size=observation_size,
@@ -170,6 +169,7 @@ def make_ppo_networks_vision(
                 activation=activation,
                 hidden_layer_sizes=cost_value_hidden_layer_sizes,
                 state_obs_key=cost_value_obs_key,
+                layer_norm=layer_norm,
             )
     else:
         encoder_network = None
@@ -180,6 +180,7 @@ def make_ppo_networks_vision(
             activation=activation,
             hidden_layer_sizes=policy_hidden_layer_sizes,
             state_obs_key=policy_obs_key,
+            layer_norm=layer_norm,
             normalise_channels=normalise_channels,
             pixel_keys=policy_pixel_keys,
         )
@@ -190,6 +191,7 @@ def make_ppo_networks_vision(
             activation=activation,
             hidden_layer_sizes=value_hidden_layer_sizes,
             state_obs_key=value_obs_key,
+            layer_norm=layer_norm,
             normalise_channels=normalise_channels,
             pixel_keys=value_pixel_keys,
         )
@@ -202,6 +204,7 @@ def make_ppo_networks_vision(
                 activation=activation,
                 hidden_layer_sizes=cost_value_hidden_layer_sizes,
                 state_obs_key=cost_value_obs_key,
+                layer_norm=layer_norm,
                 normalise_channels=normalise_channels,
                 pixel_keys=cost_value_pixel_keys,
             )

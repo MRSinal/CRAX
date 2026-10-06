@@ -568,6 +568,7 @@ def make_value_network_vision(
     hidden_layer_sizes: Sequence[int] = [256, 256],
     activation: ActivationFn = linen.swish,
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
+    layer_norm: bool = False,
     state_obs_key: str = "",
     normalise_channels: bool = False,
     pixel_keys: Optional[Sequence[str]] = None,
@@ -580,6 +581,7 @@ def make_value_network_vision(
         layer_sizes=list(hidden_layer_sizes) + [1],
         activation=activation,
         kernel_init=kernel_init,
+        layer_norm=layer_norm,
         normalise_channels=normalise_channels,
         state_obs_key=state_obs_key,
         pixel_keys=None if pixel_keys is None else tuple(pixel_keys),
@@ -739,6 +741,7 @@ def _make_vision_head_network(
     preprocess_observations_fn: types.PreprocessObservationFn,
     activation: ActivationFn,
     kernel_init: Initializer,
+    layer_norm: bool,
     state_obs_key: str,
     squeeze_output: bool,
 ) -> FeedForwardNetwork:
@@ -750,6 +753,7 @@ def _make_vision_head_network(
         layer_sizes=list(layer_sizes),
         activation=activation,
         kernel_init=kernel_init,
+        layer_norm=layer_norm,
         state_obs_key=state_obs_key,
     )
     dummy_obs = {VISION_LATENT_KEY: jnp.zeros((1, latent_size))}
@@ -780,6 +784,7 @@ def make_policy_head_network_vision(
     hidden_layer_sizes: Sequence[int] = [256, 256],
     activation: ActivationFn = linen.swish,
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
+    layer_norm: bool = False,
     state_obs_key: str = "",
     pixel_keys: Optional[Sequence[str]] = None,
 ) -> FeedForwardNetwork:
@@ -797,6 +802,7 @@ def make_policy_head_network_vision(
         preprocess_observations_fn=preprocess_observations_fn,
         activation=activation,
         kernel_init=kernel_init,
+        layer_norm=layer_norm,
         state_obs_key=state_obs_key,
         squeeze_output=False,
     )
@@ -809,6 +815,7 @@ def make_value_head_network_vision(
     hidden_layer_sizes: Sequence[int] = [256, 256],
     activation: ActivationFn = linen.swish,
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
+    layer_norm: bool = False,
     state_obs_key: str = "",
     pixel_keys: Optional[Sequence[str]] = None,
 ) -> FeedForwardNetwork:
@@ -825,6 +832,7 @@ def make_value_head_network_vision(
         preprocess_observations_fn=preprocess_observations_fn,
         activation=activation,
         kernel_init=kernel_init,
+        layer_norm=layer_norm,
         state_obs_key=state_obs_key,
         squeeze_output=True,
     )
