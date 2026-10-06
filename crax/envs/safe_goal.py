@@ -88,52 +88,52 @@ class SafeGoal(PipelineEnv, ABC):
         return data.qpos[2]
 
     def __init__(
-            self,
-            # Episode settings
-            episode_length: int = 1000,
-            # Physics settings
-            backend: str = 'mjx',
-            n_frames: int = 4,
-            timestep: float = 0.02,
-            terminate_when_unhealthy: bool = True,
-            healthy_z_range: Optional[Tuple[float, float]] = None,
-            reset_noise_scale: float = 0.005,
-            max_velocity: float = 5.0,
-            # Reward settings
-            reward_goal: float = 1.0,
-            reward_distance_scale: float = 0.0,
-            # Cost settings
-            cost_scale: float = 2.0,
-            collision_cost: float = 3.0,
-            ctrl_cost_weight: float = 0.001,
-            # Lidar settings
-            lidar_bins: int = 16,
-            lidar_max_dist: float = 3.0,
-            lidar_alias: bool = True,
-            hazard_compass_k: int = 8,
-            # Placement settings
-            placement_extents: Tuple[float, float, float, float] = (-2.5, -2.5, 2.5, 2.5),
-            agent_keepout: Optional[float] = None,
-            placement_margin: float = 0.01,
-            max_placement_attempts: int = 100,
-            max_layout_attempts: int = 1000,
-            # Goal settings
-            goal_type: str = 'cube',
-            goal_count: int = 1,
-            goal_size: float = 0.2,
-            goal_height: float = 0.2,
-            goal_positions: Optional[List] = None,
-            goal_collidable: bool = False,
-            # Hazard settings - list of specs: {type, count, size, height, collidable, fixed, density}
-            hazard_specs: Optional[List[Dict]] = None,
-            include_hazard_lidar: bool = True,
-            include_goal_lidar: bool = True,
-            include_goal_comp: bool = True,
-            include_hazard_comp: bool = True,
-            # Debug
-            debug: bool = False,
-            # TODO: Add variable that controls info that should be passed to actor
-            **kwargs,
+        self,
+        # Episode settings
+        episode_length: int = 1000,
+        # Physics settings
+        backend: str = "mjx",
+        n_frames: int = 4,
+        timestep: float = 0.02,
+        terminate_when_unhealthy: bool = True,
+        healthy_z_range: Optional[Tuple[float, float]] = None,
+        reset_noise_scale: float = 0.005,
+        max_velocity: float = 5.0,
+        # Reward settings
+        reward_goal: float = 1.0,
+        reward_distance_scale: float = 0.0,
+        # Cost settings
+        cost_scale: float = 2.0,
+        collision_cost: float = 3.0,
+        ctrl_cost_weight: float = 0.001,
+        # Lidar settings
+        lidar_bins: int = 16,
+        lidar_max_dist: float = 3.0,
+        lidar_alias: bool = True,
+        hazard_compass_k: int = 8,
+        # Placement settings
+        placement_extents: Tuple[float, float, float, float] = (-2.5, -2.5, 2.5, 2.5),
+        agent_keepout: Optional[float] = None,
+        placement_margin: float = 0.01,
+        max_placement_attempts: int = 100,
+        max_layout_attempts: int = 1000,
+        # Goal settings
+        goal_type: str = "cube",
+        goal_count: int = 1,
+        goal_size: float = 0.2,
+        goal_height: float = 0.2,
+        goal_positions: Optional[List] = None,
+        goal_collidable: bool = False,
+        # Hazard settings - list of specs: {type, count, size, height, collidable, fixed, density}
+        hazard_specs: Optional[List[Dict]] = None,
+        include_hazard_lidar: bool = True,
+        include_goal_lidar: bool = True,
+        include_goal_comp: bool = True,
+        include_hazard_comp: bool = True,
+        # Debug
+        debug: bool = False,
+        # TODO: Add variable that controls info that should be passed to actor
+        **kwargs,
     ):
         # Store debug flag early for use in initialization
         self._debug = debug
@@ -143,7 +143,6 @@ class SafeGoal(PipelineEnv, ABC):
         self._include_goal_lidar = include_goal_lidar
         self._include_goal_comp = include_goal_comp
         self._include_hazard_comp = include_hazard_comp
-
 
         # Use agent-specific defaults if not provided
         if healthy_z_range is None:
@@ -155,7 +154,7 @@ class SafeGoal(PipelineEnv, ABC):
         if hazard_specs is None:
             hazard_specs = [
                 dict(
-                    type='cylinder',
+                    type="cylinder",
                     count=8,
                     size=0.3,
                     height=0.01,
@@ -164,7 +163,7 @@ class SafeGoal(PipelineEnv, ABC):
                     density=1.0,
                 ),
                 dict(
-                    type='outer_wall',
+                    type="outer_wall",
                     offset=0.5,
                     height=0.1,
                     thickness=0.06,
@@ -227,18 +226,24 @@ class SafeGoal(PipelineEnv, ABC):
                 radii.append(float(param[0]))
 
         self._hazard_is_rect = jp.array(is_rect, dtype=jp.bool_)
-        self._hazard_half_extents = jp.stack(half_ext) if len(hazards) > 0 else jp.zeros((0, 2))
+        self._hazard_half_extents = (
+            jp.stack(half_ext) if len(hazards) > 0 else jp.zeros((0, 2))
+        )
         self._hazard_radii = jp.array(radii) if len(hazards) > 0 else jp.zeros((0,))
 
         # For goal reachability checks
         packed = [g.encode_static_params() for g in goals]
         self._goal_type_ids = jp.array([p.type_id for p in packed], dtype=jp.int32)
         self._goal_radii = jp.array([p.radius for p in packed], dtype=jp.float32)
-        self._goal_box_he = jp.array([p.half_extents_xy for p in packed], dtype=jp.float32)
+        self._goal_box_he = jp.array(
+            [p.half_extents_xy for p in packed], dtype=jp.float32
+        )
         self._goal_yaws = jp.array([p.yaw for p in packed], dtype=jp.float32)
 
         # Generate XML dynamically with the configured goals and hazards
-        xml_path = generate_goal_xml_from_base(self.agent_xml_file, self._goal_manager, self._hazard_manager)
+        xml_path = generate_goal_xml_from_base(
+            self.agent_xml_file, self._goal_manager, self._hazard_manager
+        )
         self._xml_base_file_path = base_xml_file_path(self.agent_xml_file)
 
         try:
@@ -276,23 +281,30 @@ class SafeGoal(PipelineEnv, ABC):
         # goals (the names must match what XMLBuilder emits)
         self._goal_mocap_ids = []
         for goal in goals:
-            self._goal_mocap_ids.append(
-                _mocap_id_for_body(f"goal{goal.goal_id}"))
+            self._goal_mocap_ids.append(_mocap_id_for_body(f"goal{goal.goal_id}"))
 
         # hazards (the names must match what XMLBuilder emits)
         self._hazard_mocap_ids = []
         for hazard in hazards:
-            self._hazard_mocap_ids.append(_mocap_id_for_body(f"hazard{hazard.hazard_id}"))
+            self._hazard_mocap_ids.append(
+                _mocap_id_for_body(f"hazard{hazard.hazard_id}")
+            )
 
         # Cache agent and hazard geom ids for contact checks
         self._agent_geom_ids = jp.array(
-            [i for i in range(mj_model.ngeom) if mj_model.geom_bodyid[i] == self._agent_body],
-            dtype=jp.int32
+            [
+                i
+                for i in range(mj_model.ngeom)
+                if mj_model.geom_bodyid[i] == self._agent_body
+            ],
+            dtype=jp.int32,
         )
 
         # Assign geom_id to each hazard by name "hazard{i}"
         for hazard in hazards:
-            gid = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_GEOM, f"hazard{hazard.hazard_id}")
+            gid = mujoco.mj_name2id(
+                mj_model, mujoco.mjtObj.mjOBJ_GEOM, f"hazard{hazard.hazard_id}"
+            )
             hazard.geom_id = gid
 
         # Get hazard information from HazardManager
@@ -306,7 +318,9 @@ class SafeGoal(PipelineEnv, ABC):
         sensor_found_flags = {name: False for name in self.required_sensors}
         if mj_model.nsensor > 0:
             if self._debug:
-                print(f"Model has {mj_model.nsensor} sensors. Searching for required sensors...")
+                print(
+                    f"Model has {mj_model.nsensor} sensors. Searching for required sensors..."
+                )
             for i in range(mj_model.nsensor):
                 name = mj_model.sensor(i).name
                 if name in self.required_sensors:
@@ -315,14 +329,20 @@ class SafeGoal(PipelineEnv, ABC):
                     self._sensor_info[name] = (start_adr, dim)
                     sensor_found_flags[name] = True
                     if self._debug:
-                        print(f"  Found sensor: {name}, ID: {i}, Address: {start_adr}, Dim: {dim}")
+                        print(
+                            f"  Found sensor: {name}, ID: {i}, Address: {start_adr}, Dim: {dim}"
+                        )
         else:
             print("Warning: Model has no sensors defined (mj_model.nsensor = 0).")
 
         # Check if all required sensors were found
-        missing_sensors = [name for name, found in sensor_found_flags.items() if not found]
+        missing_sensors = [
+            name for name, found in sensor_found_flags.items() if not found
+        ]
         if missing_sensors:
-            print(f"Warning: Could not find the following required sensors: {missing_sensors}")
+            print(
+                f"Warning: Could not find the following required sensors: {missing_sensors}"
+            )
         # --- End Sensor Info ---
 
         # Reward
@@ -354,13 +374,18 @@ class SafeGoal(PipelineEnv, ABC):
 
         if self._debug:
             print(
-                f"SafeGoal initialized with {self._num_hazards} hazards and {self._num_goals} goals")
+                f"SafeGoal initialized with {self._num_hazards} hazards and {self._num_goals} goals"
+            )
             cube_hazards = self._hazard_manager.get_hazards_by_type("cube")
             cylinder_hazards = self._hazard_manager.get_hazards_by_type("cylinder")
-            print(f"Hazard composition: {len(cube_hazards)} cubes, {len(cylinder_hazards)} cylinders")
+            print(
+                f"Hazard composition: {len(cube_hazards)} cubes, {len(cylinder_hazards)} cylinders"
+            )
             cube_goals = self._goal_manager.get_goals_by_type("cube")
             cylinder_goals = self._goal_manager.get_goals_by_type("cylinder")
-            print(f"Goal composition: {len(cube_goals)} cubes, {len(cylinder_goals)} cylinders")
+            print(
+                f"Goal composition: {len(cube_goals)} cubes, {len(cylinder_goals)} cylinders"
+            )
             print(f"Using modular goal and hazard system with dynamic XML generation")
 
     def reset(self, rng: jp.ndarray) -> State:
@@ -372,9 +397,7 @@ class SafeGoal(PipelineEnv, ABC):
         qpos = self.sys.qpos0 + jax.random.uniform(
             rng1, (self.sys.nq,), minval=low, maxval=hi
         )
-        qvel = jax.random.uniform(
-            rng2, (self.sys.nv,), minval=low, maxval=hi
-        )
+        qvel = jax.random.uniform(rng2, (self.sys.nv,), minval=low, maxval=hi)
 
         # Ensure valid quaternion
         qpos = jax.lax.cond(
@@ -431,7 +454,9 @@ class SafeGoal(PipelineEnv, ABC):
 
         # Only include movable hazards in mocap positioning
         if self._num_movable_hazards > 0:
-            hazard_ids = jp.array(self._hazard_mocap_ids[:self._num_movable_hazards], dtype=jp.int32)
+            hazard_ids = jp.array(
+                self._hazard_mocap_ids[: self._num_movable_hazards], dtype=jp.int32
+            )
         else:
             hazard_ids = jp.array([], dtype=jp.int32)
 
@@ -452,7 +477,9 @@ class SafeGoal(PipelineEnv, ABC):
         agent_pos = data.xpos[self._agent_body]
         goals_xy = goal_positions[:, :2]
         agent_xy = agent_pos[:2]
-        initial_dist_goal = jp.min(jp.sqrt(jp.sum(jp.square(goals_xy - agent_xy[None, :]), axis=1) + 1e-8))
+        initial_dist_goal = jp.min(
+            jp.sqrt(jp.sum(jp.square(goals_xy - agent_xy[None, :]), axis=1) + 1e-8)
+        )
 
         info = {
             "goal_positions": goal_positions,
@@ -465,7 +492,9 @@ class SafeGoal(PipelineEnv, ABC):
 
         obs = self._get_obs(data)
         reward, cost, ctrl_cost, done = jp.zeros(4)
-        metrics = self._get_metrics(data, reward, cost, initial_dist_goal, initial_dist_goal, ctrl_cost)
+        metrics = self._get_metrics(
+            data, reward, cost, initial_dist_goal, initial_dist_goal, ctrl_cost
+        )
 
         return State(data, obs, reward, done, metrics, info)
 
@@ -477,9 +506,9 @@ class SafeGoal(PipelineEnv, ABC):
 
         # Get positions
         agent_pos = data.xpos[self._agent_body]
-        hazard_positions = state.info['hazard_positions']
-        goal_positions = state.info['goal_positions']
-        last_dist_goal = state.info['last_dist_goal']
+        hazard_positions = state.info["hazard_positions"]
+        goal_positions = state.info["goal_positions"]
+        last_dist_goal = state.info["last_dist_goal"]
 
         # ============================== GOAL REWARDS ==============================
 
@@ -487,7 +516,7 @@ class SafeGoal(PipelineEnv, ABC):
         agent_xy = agent_pos[:2]
         goals_xy = goal_positions[:, :2]
 
-        is_cube = (self._goal_type_ids == 0)  # TODO extend for more types
+        is_cube = self._goal_type_ids == 0  # TODO extend for more types
 
         # vectorized SDFs
         sdf_cube_2d = jax.vmap(lambda c, he, y: sdf_cube(agent_xy, c, he, y))(
@@ -500,7 +529,7 @@ class SafeGoal(PipelineEnv, ABC):
         # pick per-type
         sdf = jp.where(is_cube, sdf_cube_2d, sdf_cylinder_2d)
 
-        reached_mask = (sdf <= 0.0)
+        reached_mask = sdf <= 0.0
         num_goals_reached = jp.sum(reached_mask.astype(jp.int32))
 
         # Dense reward: distance to nearest goal
@@ -524,7 +553,9 @@ class SafeGoal(PipelineEnv, ABC):
 
         # Shapes:
         object_is_rect = jp.zeros((total_objects,), dtype=jp.bool_)
-        object_half_extents = jp.zeros((total_objects, 2))  # only for rects; zeros otherwise
+        object_half_extents = jp.zeros(
+            (total_objects, 2)
+        )  # only for rects; zeros otherwise
         object_radii = jp.zeros((total_objects,))  # only for circles; zeros otherwise
 
         # Agent as object 0 (treat agent as circle with keepout self._agent_keepout)
@@ -535,18 +566,30 @@ class SafeGoal(PipelineEnv, ABC):
         # Hazards as objects [1 : 1+H)
         hazard_span_start = 1
         hazard_span_end = hazard_span_start + self._num_hazards
-        object_positions_xy = object_positions_xy.at[hazard_span_start:hazard_span_end].set(hazard_positions_xy)
+        object_positions_xy = object_positions_xy.at[
+            hazard_span_start:hazard_span_end
+        ].set(hazard_positions_xy)
 
-        object_is_rect = object_is_rect.at[hazard_span_start:hazard_span_end].set(self._hazard_is_rect)
-        object_half_extents = object_half_extents.at[hazard_span_start:hazard_span_end].set(self._hazard_half_extents)
-        object_radii = object_radii.at[hazard_span_start:hazard_span_end].set(self._hazard_radii)
+        object_is_rect = object_is_rect.at[hazard_span_start:hazard_span_end].set(
+            self._hazard_is_rect
+        )
+        object_half_extents = object_half_extents.at[
+            hazard_span_start:hazard_span_end
+        ].set(self._hazard_half_extents)
+        object_radii = object_radii.at[hazard_span_start:hazard_span_end].set(
+            self._hazard_radii
+        )
 
         # Goals as objects [hazard_span_end : hazard_span_end + G)
         goal_span_start = hazard_span_end
         goal_span_end = goal_span_start + self._num_goals
-        object_positions_xy = object_positions_xy.at[goal_span_start:goal_span_end].set(goal_positions_xy)
+        object_positions_xy = object_positions_xy.at[goal_span_start:goal_span_end].set(
+            goal_positions_xy
+        )
         object_is_rect = object_is_rect.at[goal_span_start:goal_span_end].set(False)
-        object_radii = object_radii.at[goal_span_start:goal_span_end].set(self._goal_keepouts)
+        object_radii = object_radii.at[goal_span_start:goal_span_end].set(
+            self._goal_keepouts
+        )
 
         active_object_count = jp.array(total_objects, dtype=jp.int32)
 
@@ -559,8 +602,17 @@ class SafeGoal(PipelineEnv, ABC):
             Otherwise keep its current position. We temporarily disable the goal's
             own object keepout while sampling, to avoid blocking itself.
             """
-            rng_key, object_positions_xy, object_is_rect, object_half_extents, object_radii, new_goal_positions_out = carry
-            object_slot = goal_span_start + goal_index  # where this goal sits in the object arrays
+            (
+                rng_key,
+                object_positions_xy,
+                object_is_rect,
+                object_half_extents,
+                object_radii,
+                new_goal_positions_out,
+            ) = carry
+            object_slot = (
+                goal_span_start + goal_index
+            )  # where this goal sits in the object arrays
 
             def _place_new(_):
                 # Temporarily disable this goal's own keepout while sampling
@@ -572,7 +624,9 @@ class SafeGoal(PipelineEnv, ABC):
 
                 # convert [minx, miny, maxx, maxy] -> half-extents [ex, ey]
                 minx, miny, maxx, maxy = self._placement_extents
-                placement_half_extents = jp.array([(maxx - minx) * 0.5, (maxy - miny) * 0.5], dtype=jp.float32)
+                placement_half_extents = jp.array(
+                    [(maxx - minx) * 0.5, (maxy - miny) * 0.5], dtype=jp.float32
+                )
 
                 new_pos_xyz, next_rng = choose_valid_position_shape_aware(
                     rng_key,
@@ -588,35 +642,63 @@ class SafeGoal(PipelineEnv, ABC):
                 )
 
                 # Update arrays at this slot and restore the radius
-                updated_positions_xy = object_positions_xy.at[object_slot].set(new_pos_xyz[:2])
-                updated_goal_positions_out = new_goal_positions_out.at[goal_index].set(new_pos_xyz)
+                updated_positions_xy = object_positions_xy.at[object_slot].set(
+                    new_pos_xyz[:2]
+                )
+                updated_goal_positions_out = new_goal_positions_out.at[goal_index].set(
+                    new_pos_xyz
+                )
 
                 updated_radii = object_radii.at[object_slot].set(goal_keepout_radius)
 
-                return (next_rng, updated_positions_xy, object_is_rect, object_half_extents, updated_radii,
-                        updated_goal_positions_out)
+                return (
+                    next_rng,
+                    updated_positions_xy,
+                    object_is_rect,
+                    object_half_extents,
+                    updated_radii,
+                    updated_goal_positions_out,
+                )
 
             def _keep_old(_):
-                updated_goal_positions_out = new_goal_positions_out.at[goal_index].set(goal_positions[goal_index])
+                updated_goal_positions_out = new_goal_positions_out.at[goal_index].set(
+                    goal_positions[goal_index]
+                )
                 next_rng, _ = jax.random.split(rng_key)
-                return (next_rng, object_positions_xy, object_is_rect, object_half_extents, object_radii,
-                        updated_goal_positions_out)
+                return (
+                    next_rng,
+                    object_positions_xy,
+                    object_is_rect,
+                    object_half_extents,
+                    object_radii,
+                    updated_goal_positions_out,
+                )
 
-            return jax.lax.cond(reached_mask[goal_index], _place_new, _keep_old, operand=None)
+            return jax.lax.cond(
+                reached_mask[goal_index], _place_new, _keep_old, operand=None
+            )
 
         # Compute new positions for all goals (only those reached will move)
         new_goal_positions = jp.zeros_like(goal_positions)
-        (rng_for_goal_respawn,
-         object_positions_xy,
-         object_is_rect,
-         object_half_extents,
-         object_radii,
-         new_goal_positions) = jax.lax.fori_loop(
+        (
+            rng_for_goal_respawn,
+            object_positions_xy,
+            object_is_rect,
+            object_half_extents,
+            object_radii,
+            new_goal_positions,
+        ) = jax.lax.fori_loop(
             0,
             self._num_goals,
             lambda i, carry: _place_or_keep_goal(carry, i),
-            (rng_for_goal_respawn, object_positions_xy, object_is_rect, object_half_extents, object_radii,
-             new_goal_positions),
+            (
+                rng_for_goal_respawn,
+                object_positions_xy,
+                object_is_rect,
+                object_half_extents,
+                object_radii,
+                new_goal_positions,
+            ),
         )
 
         # Scatter updated goal mocaps back into the physics state
@@ -627,14 +709,13 @@ class SafeGoal(PipelineEnv, ABC):
         # Health check
         min_z, max_z = self._healthy_z_range
         is_healthy = jp.logical_and(
-            agent_pos[2] >= min_z,
-            agent_pos[2] <= max_z
+            agent_pos[2] >= min_z, agent_pos[2] <= max_z
         ).astype(jp.float32)
 
         # Termination conditions
         done = jp.logical_or(
             (1.0 - is_healthy) * self._terminate_when_unhealthy,
-            jp.any(jp.isnan(agent_pos))
+            jp.any(jp.isnan(agent_pos)),
         )
 
         # ============================== METRICS AGGREGATION ==============================
@@ -650,57 +731,84 @@ class SafeGoal(PipelineEnv, ABC):
 
         # Get observation and metrics
         obs = self._get_obs(data)
-        metrics = self._get_metrics(data, reward, cost, dist_goal, last_dist_goal, ctrl_cost)
+        metrics = self._get_metrics(
+            data, reward, cost, dist_goal, last_dist_goal, ctrl_cost
+        )
 
         # Update info
         new_info = state.info.copy()
-        new_info.update({
-            "goal_positions": new_goal_positions,
-            "step_count": state.info['step_count'] + 1,
-            "last_dist_goal": dist_goal,
-            "cost": cost,
-            "respawn_rng": rng_for_goal_respawn,
-        })
+        new_info.update(
+            {
+                "goal_positions": new_goal_positions,
+                "step_count": state.info["step_count"] + 1,
+                "last_dist_goal": dist_goal,
+                "cost": cost,
+                "respawn_rng": rng_for_goal_respawn,
+            }
+        )
 
         return State(data, obs, reward, done.astype(jp.float32), metrics, new_info)
 
-    def _check_position_valid(self, candidate_pos: jp.ndarray, existing_positions: jp.ndarray,
-                              keepout_distances: jp.ndarray) -> bool:
+    def _check_position_valid(
+        self,
+        candidate_pos: jp.ndarray,
+        existing_positions: jp.ndarray,
+        keepout_distances: jp.ndarray,
+    ) -> bool:
         """Check if a candidate position is valid given existing positions and keepout distances."""
         if len(existing_positions) == 0:
             return True
 
         # Calculate distances to all existing positions
-        distances = jp.sqrt(jp.sum(jp.square(candidate_pos[:2] - existing_positions[:, :2]), axis=1))
+        distances = jp.sqrt(
+            jp.sum(jp.square(candidate_pos[:2] - existing_positions[:, :2]), axis=1)
+        )
 
         # Check if candidate violates any keepout distance
         violations = distances < keepout_distances + self._placement_margin
         return jp.logical_not(jp.any(violations))
 
-    def _sample_valid_position(self, rng_key: jp.ndarray, existing_positions: jp.ndarray,
-                               existing_keepouts: jp.ndarray, keepout: float) -> jp.ndarray:
+    def _sample_valid_position(
+        self,
+        rng_key: jp.ndarray,
+        existing_positions: jp.ndarray,
+        existing_keepouts: jp.ndarray,
+        keepout: float,
+    ) -> jp.ndarray:
         """Sample a valid position that doesn't violate placement constraints."""
 
         def sample_attempt(carry):
             attempt_rng, _ = carry
             attempt_rng, subkey = jax.random.split(attempt_rng)
-            candidate = sample_position_in_extents(subkey, self._placement_extents, keepout)
+            candidate = sample_position_in_extents(
+                subkey, self._placement_extents, keepout
+            )
             return attempt_rng, candidate
 
         # Try multiple attempts to find a valid position
         for attempt in range(self._max_placement_attempts):
             rng_key, subkey = jax.random.split(rng_key)
-            candidate = sample_position_in_extents(subkey, self._placement_extents, keepout)
+            candidate = sample_position_in_extents(
+                subkey, self._placement_extents, keepout
+            )
 
-            if self._check_position_valid(candidate, existing_positions, existing_keepouts):
+            if self._check_position_valid(
+                candidate, existing_positions, existing_keepouts
+            ):
                 return candidate
 
         # If we can't find a valid position, return a fallback
         if self._debug:
-            print(f"Warning: Could not find valid position after {self._max_placement_attempts} attempts")
-        return sample_position_in_extents(rng_key, self._placement_extents, keepout)  # Return anyway
+            print(
+                f"Warning: Could not find valid position after {self._max_placement_attempts} attempts"
+            )
+        return sample_position_in_extents(
+            rng_key, self._placement_extents, keepout
+        )  # Return anyway
 
-    def _calculate_safety_cost(self, data: mjx.Data, hazard_positions: jp.ndarray) -> jp.ndarray:
+    def _calculate_safety_cost(
+        self, data: mjx.Data, hazard_positions: jp.ndarray
+    ) -> jp.ndarray:
         """Sum of per-hazard costs. Binary collision for collidables, proximity for others."""
         return compute_hazard_costs(
             hazards=self._hazard_manager.hazards,
@@ -714,7 +822,6 @@ class SafeGoal(PipelineEnv, ABC):
             contact_dist=getattr(data.contact, "dist", None),
             ncon=getattr(data, "ncon", None),
         )
-
 
     # TODO: Rewrite functions for each environment so no goal_comp, hazard_comp, any lidar is inside the state vector
     def _get_obs(self, data: mjx.Data) -> jp.ndarray:
@@ -743,19 +850,19 @@ class SafeGoal(PipelineEnv, ABC):
         # Handle potential missing sensors by providing default zero vectors if info not found
         default_val = jp.zeros(3, dtype=sensor_data.dtype)
 
-        accel_adr, accel_dim = self._sensor_info.get('accelerometer', (0, 0))
+        accel_adr, accel_dim = self._sensor_info.get("accelerometer", (0, 0))
         accelerometer = jax.lax.dynamic_slice(sensor_data, (accel_adr,), (accel_dim,))
         accelerometer = jp.where(accel_dim == 3, accelerometer, default_val)
 
-        velo_adr, velo_dim = self._sensor_info.get('velocimeter', (0, 0))
+        velo_adr, velo_dim = self._sensor_info.get("velocimeter", (0, 0))
         velocimeter = jax.lax.dynamic_slice(sensor_data, (velo_adr,), (velo_dim,))
         velocimeter = jp.where(velo_dim == 3, velocimeter, default_val)
 
-        gyro_adr, gyro_dim = self._sensor_info.get('gyro', (0, 0))
+        gyro_adr, gyro_dim = self._sensor_info.get("gyro", (0, 0))
         gyro = jax.lax.dynamic_slice(sensor_data, (gyro_adr,), (gyro_dim,))
         gyro = jp.where(gyro_dim == 3, gyro, default_val)
 
-        mag_adr, mag_dim = self._sensor_info.get('magnetometer', (0, 0))
+        mag_adr, mag_dim = self._sensor_info.get("magnetometer", (0, 0))
         magnetometer = jax.lax.dynamic_slice(sensor_data, (mag_adr,), (mag_dim,))
         magnetometer = jp.where(mag_dim == 3, magnetometer, default_val)
 
@@ -777,8 +884,12 @@ class SafeGoal(PipelineEnv, ABC):
         agent_centric_dy_goal = -world_dx_goal * sin_a + world_dy_goal * cos_a
 
         # 3. Create compass observation (agent-centric)
-        agent_centric_rel_goal_xy = jp.array([agent_centric_dx_goal, agent_centric_dy_goal])
-        goal_comp = agent_centric_rel_goal_xy / (safe_norm(agent_centric_rel_goal_xy) + 1e-8)
+        agent_centric_rel_goal_xy = jp.array(
+            [agent_centric_dx_goal, agent_centric_dy_goal]
+        )
+        goal_comp = agent_centric_rel_goal_xy / (
+            safe_norm(agent_centric_rel_goal_xy) + 1e-8
+        )
 
         # 4. Create Safety-Gymnasium style Lidars with configurable bins
         _lidar_num_bins = self._lidar_num_bins
@@ -794,6 +905,7 @@ class SafeGoal(PipelineEnv, ABC):
         bin_size = (2 * jp.pi) / _lidar_num_bins
 
         if self._include_goal_lidar:
+
             def process_goal_lidar(carry, goal_mocap_id):
                 """Accumulate lidar signal from a single goal."""
                 goal_lidar, agent_pos, cos_a, sin_a = carry
@@ -802,7 +914,7 @@ class SafeGoal(PipelineEnv, ABC):
                 goal_pos_3d = jp.where(
                     goal_mocap_id >= 0,
                     data.mocap_pos[goal_mocap_id],
-                    jp.array([0.0, 0.0, 0.0])
+                    jp.array([0.0, 0.0, 0.0]),
                 )
 
                 # Relative vector in world frame
@@ -815,7 +927,9 @@ class SafeGoal(PipelineEnv, ABC):
                 agent_centric_dy_goal = -world_dx_goal * sin_a + world_dy_goal * cos_a
 
                 # Distance and angle
-                dist_goal = safe_norm(jp.array([agent_centric_dx_goal, agent_centric_dy_goal]))
+                dist_goal = safe_norm(
+                    jp.array([agent_centric_dx_goal, agent_centric_dy_goal])
+                )
                 angle_goal = jp.arctan2(agent_centric_dy_goal, agent_centric_dx_goal)
                 angle_goal = (angle_goal + 2 * jp.pi) % (2 * jp.pi)
 
@@ -825,8 +939,12 @@ class SafeGoal(PipelineEnv, ABC):
                 bin_idx_goal = jp.minimum(bin_idx_goal, _lidar_num_bins - 1).astype(int)
 
                 # Sensor value with range limit
-                sensor_val_goal = jp.maximum(0.0, _lidar_max_dist - dist_goal) / _lidar_max_dist
-                sensor_val_goal = jp.where(dist_goal > _lidar_max_dist, 0.0, sensor_val_goal)
+                sensor_val_goal = (
+                    jp.maximum(0.0, _lidar_max_dist - dist_goal) / _lidar_max_dist
+                )
+                sensor_val_goal = jp.where(
+                    dist_goal > _lidar_max_dist, 0.0, sensor_val_goal
+                )
 
                 # Zero out if mocap id is invalid
                 sensor_val_goal = jp.where(goal_mocap_id >= 0, sensor_val_goal, 0.0)
@@ -842,12 +960,20 @@ class SafeGoal(PipelineEnv, ABC):
 
                     bin_plus_idx_goal = (bin_idx_goal + 1) % _lidar_num_bins
                     goal_lidar = goal_lidar.at[bin_plus_idx_goal].set(
-                        jp.maximum(goal_lidar[bin_plus_idx_goal], alias_factor_goal * sensor_val_goal)
+                        jp.maximum(
+                            goal_lidar[bin_plus_idx_goal],
+                            alias_factor_goal * sensor_val_goal,
+                        )
                     )
 
-                    bin_minus_idx_goal = (bin_idx_goal - 1 + _lidar_num_bins) % _lidar_num_bins
+                    bin_minus_idx_goal = (
+                        bin_idx_goal - 1 + _lidar_num_bins
+                    ) % _lidar_num_bins
                     goal_lidar = goal_lidar.at[bin_minus_idx_goal].set(
-                        jp.maximum(goal_lidar[bin_minus_idx_goal], (1.0 - alias_factor_goal) * sensor_val_goal)
+                        jp.maximum(
+                            goal_lidar[bin_minus_idx_goal],
+                            (1.0 - alias_factor_goal) * sensor_val_goal,
+                        )
                     )
 
                 return (goal_lidar, agent_pos, cos_a, sin_a), None
@@ -862,6 +988,7 @@ class SafeGoal(PipelineEnv, ABC):
         # === HAZARD LIDAR ===
         # Process hazards for the hazard lidar
         if self._include_hazard_lidar:
+
             def process_hazard_lidar(carry, hazard_mocap_id):
                 """Process a single hazard for the hazard lidar."""
                 hazard_lidar, agent_pos, agent_z_angle, cos_a, sin_a = carry
@@ -870,7 +997,7 @@ class SafeGoal(PipelineEnv, ABC):
                 hazard_pos_3d = jp.where(
                     hazard_mocap_id >= 0,
                     data.mocap_pos[hazard_mocap_id],
-                    jp.array([0.0, 0.0, 0.0])  # Default position for invalid IDs
+                    jp.array([0.0, 0.0, 0.0]),  # Default position for invalid IDs
                 )
 
                 # Calculate relative position to hazard (world frame)
@@ -880,25 +1007,41 @@ class SafeGoal(PipelineEnv, ABC):
                 world_dx_hazard = rel_hazard_pos_3d_world[0]
                 world_dy_hazard = rel_hazard_pos_3d_world[1]
 
-                agent_centric_dx_hazard = world_dx_hazard * cos_a + world_dy_hazard * sin_a
-                agent_centric_dy_hazard = -world_dx_hazard * sin_a + world_dy_hazard * cos_a
+                agent_centric_dx_hazard = (
+                    world_dx_hazard * cos_a + world_dy_hazard * sin_a
+                )
+                agent_centric_dy_hazard = (
+                    -world_dx_hazard * sin_a + world_dy_hazard * cos_a
+                )
 
                 # Calculate distance and angle for this hazard
-                dist_hazard = safe_norm(jp.array([agent_centric_dx_hazard, agent_centric_dy_hazard]))
-                angle_hazard = jp.arctan2(agent_centric_dy_hazard, agent_centric_dx_hazard)
+                dist_hazard = safe_norm(
+                    jp.array([agent_centric_dx_hazard, agent_centric_dy_hazard])
+                )
+                angle_hazard = jp.arctan2(
+                    agent_centric_dy_hazard, agent_centric_dx_hazard
+                )
                 angle_hazard = (angle_hazard + 2 * jp.pi) % (2 * jp.pi)
 
                 # Determine which bin the hazard falls into
                 bin_idx_float_hazard = angle_hazard / bin_size
                 bin_idx_hazard = jp.floor(bin_idx_float_hazard)
-                bin_idx_hazard = jp.minimum(bin_idx_hazard, _lidar_num_bins - 1).astype(int)
+                bin_idx_hazard = jp.minimum(bin_idx_hazard, _lidar_num_bins - 1).astype(
+                    int
+                )
 
                 # Calculate sensor reading for hazard
-                sensor_val_hazard = jp.maximum(0.0, _lidar_max_dist - dist_hazard) / _lidar_max_dist
-                sensor_val_hazard = jp.where(dist_hazard > _lidar_max_dist, 0.0, sensor_val_hazard)
+                sensor_val_hazard = (
+                    jp.maximum(0.0, _lidar_max_dist - dist_hazard) / _lidar_max_dist
+                )
+                sensor_val_hazard = jp.where(
+                    dist_hazard > _lidar_max_dist, 0.0, sensor_val_hazard
+                )
 
                 # Only process if hazard ID is valid (>= 0)
-                sensor_val_hazard = jp.where(hazard_mocap_id >= 0, sensor_val_hazard, 0.0)
+                sensor_val_hazard = jp.where(
+                    hazard_mocap_id >= 0, sensor_val_hazard, 0.0
+                )
 
                 # Update the hazard Lidar observation for the primary bin
                 hazard_lidar = hazard_lidar.at[bin_idx_hazard].set(
@@ -912,13 +1055,21 @@ class SafeGoal(PipelineEnv, ABC):
                     # Bin plus one (wraps around)
                     bin_plus_idx_hazard = (bin_idx_hazard + 1) % _lidar_num_bins
                     hazard_lidar = hazard_lidar.at[bin_plus_idx_hazard].set(
-                        jp.maximum(hazard_lidar[bin_plus_idx_hazard], alias_factor_hazard * sensor_val_hazard)
+                        jp.maximum(
+                            hazard_lidar[bin_plus_idx_hazard],
+                            alias_factor_hazard * sensor_val_hazard,
+                        )
                     )
 
                     # Bin minus one (wraps around)
-                    bin_minus_idx_hazard = (bin_idx_hazard - 1 + _lidar_num_bins) % _lidar_num_bins
+                    bin_minus_idx_hazard = (
+                        bin_idx_hazard - 1 + _lidar_num_bins
+                    ) % _lidar_num_bins
                     hazard_lidar = hazard_lidar.at[bin_minus_idx_hazard].set(
-                        jp.maximum(hazard_lidar[bin_minus_idx_hazard], (1.0 - alias_factor_hazard) * sensor_val_hazard)
+                        jp.maximum(
+                            hazard_lidar[bin_minus_idx_hazard],
+                            (1.0 - alias_factor_hazard) * sensor_val_hazard,
+                        )
                     )
 
                 return (hazard_lidar, agent_pos, agent_z_angle, cos_a, sin_a), None
@@ -933,13 +1084,12 @@ class SafeGoal(PipelineEnv, ABC):
         # === HAZARD COMPASSES ===
         # Create individual compass observations for each hazard
         if self._include_hazard_comp:
+
             def compute_compass_for_hazard(mocap_idx):
                 """Compute compass for a specific mocap index."""
                 # Handle invalid mocap index
                 hazard_pos_3d = jp.where(
-                    mocap_idx >= 0,
-                    data.mocap_pos[mocap_idx],
-                    jp.array([0.0, 0.0, 0.0])
+                    mocap_idx >= 0, data.mocap_pos[mocap_idx], jp.array([0.0, 0.0, 0.0])
                 )
 
                 # Calculate relative position to hazard (world frame)
@@ -949,8 +1099,12 @@ class SafeGoal(PipelineEnv, ABC):
                 world_dx_hazard = rel_hazard_pos_3d_world[0]
                 world_dy_hazard = rel_hazard_pos_3d_world[1]
 
-                agent_centric_dx_hazard = world_dx_hazard * cos_a + world_dy_hazard * sin_a
-                agent_centric_dy_hazard = -world_dx_hazard * sin_a + world_dy_hazard * cos_a
+                agent_centric_dx_hazard = (
+                    world_dx_hazard * cos_a + world_dy_hazard * sin_a
+                )
+                agent_centric_dy_hazard = (
+                    -world_dx_hazard * sin_a + world_dy_hazard * cos_a
+                )
 
                 # Create normalized compass observation (agent-centric)
                 rel_vec = jp.array([agent_centric_dx_hazard, agent_centric_dy_hazard])
@@ -982,54 +1136,86 @@ class SafeGoal(PipelineEnv, ABC):
             def _no_hazards():
                 return -jp.ones((k,), dtype=jp.int32)
 
-            closest_ids = jax.lax.cond(H > 0, lambda _: _pick_and_pad(), lambda _: _no_hazards(), operand=None)
+            closest_ids = jax.lax.cond(
+                H > 0, lambda _: _pick_and_pad(), lambda _: _no_hazards(), operand=None
+            )
 
-            hazard_compasses = jax.vmap(compute_compass_for_hazard)(closest_ids)  # (k,2)
+            hazard_compasses = jax.vmap(compute_compass_for_hazard)(
+                closest_ids
+            )  # (k,2)
             hazard_compasses_flat = hazard_compasses.reshape((-1,))  # (2k,)
 
         # Build observation with separate goal and hazard lidars plus individual hazard compasses
         obs_parts = [
-            accelerometer, # (3,)
-            velocimeter, # (3,)
-            gyro, # (3,)
-            magnetometer, # (3,)
+            accelerometer,  # (3,)
+            velocimeter,  # (3,)
+            gyro,  # (3,)
+            magnetometer,  # (3,)
         ]
         if self._include_hazard_lidar:
-            obs_parts.append(hazard_lidar_obs) # (16,) - Hazard Lidar
+            obs_parts.append(hazard_lidar_obs)  # (16,) - Hazard Lidar
         if self._include_goal_lidar:
-            obs_parts.append(goal_lidar_obs) # (16,) - Goal Lidar
+            obs_parts.append(goal_lidar_obs)  # (16,) - Goal Lidar
         if self._include_goal_comp:
-            obs_parts.append(goal_comp) # (2,) - Goal compass
+            obs_parts.append(goal_comp)  # (2,) - Goal compass
         if self._include_hazard_comp:
-            obs_parts.append(hazard_compasses_flat) # (16,) - Individual hazard compasses (8 hazards * 2 each)
+            obs_parts.append(
+                hazard_compasses_flat
+            )  # (16,) - Individual hazard compasses (8 hazards * 2 each)
 
         obs = jp.concatenate(obs_parts)
 
         return obs
 
-    def _get_metrics(self, data: mjx.Data, reward: jp.ndarray, cost: jp.ndarray,
-                     dist_goal: jp.ndarray, last_dist_goal: jp.ndarray, ctrl_cost: jp.ndarray) -> Dict:
+    def _get_metrics(
+        self,
+        data: mjx.Data,
+        reward: jp.ndarray,
+        cost: jp.ndarray,
+        dist_goal: jp.ndarray,
+        last_dist_goal: jp.ndarray,
+        ctrl_cost: jp.ndarray,
+    ) -> Dict:
         """Get metrics dictionary."""
         agent_pos = data.xpos[self._agent_body]
 
         return {
-            'reward': reward,
-            'cost': cost,
-            'x_position': agent_pos[0],
-            'y_position': agent_pos[1],
-            'distance_to_goal': dist_goal,
-            'last_dist_goal': last_dist_goal,
-            'ctrl_cost': ctrl_cost,
+            "reward": reward,
+            "cost": cost,
+            "x_position": agent_pos[0],
+            "y_position": agent_pos[1],
+            "distance_to_goal": dist_goal,
+            "last_dist_goal": last_dist_goal,
+            "ctrl_cost": ctrl_cost,
         }
+
+    def get_compass_count(self) -> int:
+        """Returns the number of lidars that the environment has initialized"""
+        if self._include_hazard_comp and self._include_goal_comp:
+            return self._hazard_compass_k * 2 + 2
+        elif self._include_hazard_comp:
+            return self._hazard_compass_k * 2
+        elif self._include_goal_comp:
+            return 2
+        else:
+            return 0
+
+    def get_lidar_count(self) -> int:
+        """Returns the number of lidars that the environment has initialized"""
+        if self._include_hazard_lidar and self._include_goal_lidar:
+            return self._lidar_num_bins * 2
+        elif self._include_hazard_lidar or self._include_goal_lidar:
+            return self._lidar_num_bins
+        else:
+            return 0
 
     @property
     def observation_size(self) -> int:
         """Returns the size of the observation vector."""
         return (
-                12 +  # Sensor data (3 each for accel, vel, gyro, mag)
-                self._lidar_num_bins * 2 +  # Goal and hazard lidars
-                2 +  # Goal compass
-                self._hazard_compass_k * 2  # Hazard compasses
+            12  # Sensor data (3 each for accel, vel, gyro, mag)
+            + self.get_lidar_count(self)  # Goal and hazard lidars
+            + self.get_compass_count(self)  # Hazard compasses
         )
 
 
@@ -1057,7 +1243,7 @@ class SafeGoalPoint(SafeGoal):
 
     @property
     def required_sensors(self) -> List[str]:
-        return ['accelerometer', 'velocimeter', 'gyro', 'magnetometer']
+        return ["accelerometer", "velocimeter", "gyro", "magnetometer"]
 
     def get_agent_heading(self, data: mjx.Data) -> jp.ndarray:
         """Get the agent's current heading angle from z_hinge rotation."""
