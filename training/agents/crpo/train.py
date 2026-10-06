@@ -75,6 +75,10 @@ def train(
         # transfer learning / curriculum support
         pretrained_params: Optional[Any] = None,
         init_cost_value_from: str = 'value',
+        # GAP, passed through to ppo.train
+        gap_frac: float = 0.5,
+        gap_random_phase: bool = False,
+        proprio_dropout: float = 0.0,
 ):
     """CRPO training.
 
@@ -132,6 +136,9 @@ def train(
         from an algorithm without cost_value (e.g., PPO). Options:
         - 'value': copy from value network (often works well for transfer)
         - 'random': use random initialization
+      gap_frac: share of training with GAP on (see ppo.train)
+      gap_random_phase: shuffle the GAP phase across samples (see ppo.train)
+      proprio_dropout: proprio dropout baseline (see ppo.train)
 
     Returns:
       Tuple of (make_policy function, network params, metrics, eval_env)
@@ -224,4 +231,7 @@ def train(
         post_step_fn=post_step_fn,
         extra_fields=extra_fields,
         init_aux_state_fn=init_aux_state_fn,
+        gap_frac=gap_frac,
+        gap_random_phase=gap_random_phase,
+        proprio_dropout=proprio_dropout,
     )

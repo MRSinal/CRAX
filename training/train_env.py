@@ -310,7 +310,7 @@ def main():
                     f"'vision_kwargs' parameter)."
                 )
             if config.proprio_mlp and 'gap_frac' not in train_kwargs:
-                raise ValueError(f"--proprio_mlp and GAP are implemented for ppo and ppo_lag only, got '{alg_name}'.")
+                raise ValueError(f"--proprio_mlp and GAP are implemented for ppo, ppo_lag and crpo only, got '{alg_name}'.")
 
         # Create the training function
         train_fn = functools.partial(train_fn_base, **train_kwargs)
