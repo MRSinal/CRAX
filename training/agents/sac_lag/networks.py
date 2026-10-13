@@ -117,6 +117,7 @@ def make_sac_lag_networks_vision(
     normalise_channels: bool = False,
     policy_obs_key: str = '',
     value_obs_key: str = '',
+    early_fusion_technique: str = 'concat',
 ) -> SACLagNetworks:
     """Make vision SAC-Lag networks.
 
@@ -135,6 +136,7 @@ def make_sac_lag_networks_vision(
         hidden_layer_sizes=hidden_layer_sizes,
         activation=activation,
         layer_norm=policy_network_layer_norm,
+        early_fusion_technique=early_fusion_technique,
         state_obs_key=policy_obs_key,
         normalise_channels=normalise_channels,
     )
@@ -145,6 +147,7 @@ def make_sac_lag_networks_vision(
         hidden_layer_sizes=hidden_layer_sizes,
         activation=activation,
         layer_norm=q_network_layer_norm,
+        early_fusion_technique=early_fusion_technique,
         state_obs_key=value_obs_key,
         normalise_channels=normalise_channels,
     )
@@ -155,6 +158,7 @@ def make_sac_lag_networks_vision(
         hidden_layer_sizes=hidden_layer_sizes,
         activation=activation,
         layer_norm=q_network_layer_norm,
+        early_fusion_technique=early_fusion_technique,
         state_obs_key=value_obs_key,
         normalise_channels=normalise_channels,
     )

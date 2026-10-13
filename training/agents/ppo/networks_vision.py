@@ -51,6 +51,7 @@ def make_ppo_networks_vision(
     value_pixel_keys: Optional[Sequence[str]] = None,
     cost_value_pixel_keys: Optional[Sequence[str]] = None,
     layer_norm: bool = False,
+    early_fusion_technique: str = "concat",
 ) -> PPONetworks:
     """Make Vision PPO networks with preprocessor.
 
@@ -148,6 +149,7 @@ def make_ppo_networks_vision(
             hidden_layer_sizes=policy_hidden_layer_sizes,
             state_obs_key=policy_obs_key,
             layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
         )
 
         value_network = networks.make_value_head_network_vision(
@@ -158,6 +160,7 @@ def make_ppo_networks_vision(
             hidden_layer_sizes=value_hidden_layer_sizes,
             state_obs_key=value_obs_key,
             layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
         )
 
         cost_value_network = None
@@ -170,6 +173,7 @@ def make_ppo_networks_vision(
                 hidden_layer_sizes=cost_value_hidden_layer_sizes,
                 state_obs_key=cost_value_obs_key,
                 layer_norm=layer_norm,
+                early_fusion_technique=early_fusion_technique,
             )
     else:
         encoder_network = None
@@ -181,6 +185,7 @@ def make_ppo_networks_vision(
             hidden_layer_sizes=policy_hidden_layer_sizes,
             state_obs_key=policy_obs_key,
             layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
             normalise_channels=normalise_channels,
             pixel_keys=policy_pixel_keys,
         )
@@ -192,6 +197,7 @@ def make_ppo_networks_vision(
             hidden_layer_sizes=value_hidden_layer_sizes,
             state_obs_key=value_obs_key,
             layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
             normalise_channels=normalise_channels,
             pixel_keys=value_pixel_keys,
         )
@@ -205,6 +211,7 @@ def make_ppo_networks_vision(
                 hidden_layer_sizes=cost_value_hidden_layer_sizes,
                 state_obs_key=cost_value_obs_key,
                 layer_norm=layer_norm,
+                early_fusion_technique=early_fusion_technique,
                 normalise_channels=normalise_channels,
                 pixel_keys=cost_value_pixel_keys,
             )

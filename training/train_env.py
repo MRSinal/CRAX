@@ -290,6 +290,10 @@ def main():
                 network_routing['q_network_layer_norm'] = config.vision_layer_norm
             else:
                 network_routing['layer_norm'] = config.vision_layer_norm
+            # Early-fusion technique is a single value for every head (not
+            # per-head like layer-norm), so route the one CLI flag through for
+            # both the PPO and SAC families.
+            network_routing['early_fusion_technique'] = config.vision_early_fusion
             train_kwargs['network_factory'] = make_vision_network_factory(
                 alg_name,
                 **network_routing,

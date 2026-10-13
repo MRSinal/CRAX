@@ -276,6 +276,7 @@ class VisionMLP(linen.Module):
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform()
     activate_final: bool = False
     layer_norm: bool = False
+    early_fusion_technique: str = "concat"
     normalise_channels: bool = False
     state_obs_key: str = ""
     policy_head: bool = True  # = False is useful for frozen encoders.
@@ -294,9 +295,18 @@ class VisionMLP(linen.Module):
             latent_layernorm = linen.LayerNorm()
             latent = latent_layernorm(latent)
         if self.state_obs_key:
-            latent = jnp.concatenate(
-                [latent, data[self.state_obs_key]], axis=-1
-            )  # TODO: Try with dedicated state network
+            if self.early_fusion_technique == "concat":
+                latent = jnp.concatenate(
+                    [latent, data[self.state_obs_key]], axis=-1
+                )  # TODO: Try with dedicated state network
+            elif self.early_fusion_technique == "sum":
+                state = data[self.state_obs_key]
+                # project to do summation as L.shape != S.shape
+                state = linen.Dense(latent.shape[-1], name="state_proj")(state)
+                latent = latent + state
+            else:
+                # TODO: FiLM
+                pass
 
         return MLP(
             layer_sizes=self.layer_sizes,
@@ -320,6 +330,7 @@ class VisionMLPHead(linen.Module):
     activation: ActivationFn = linen.relu
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform()
     activate_final: bool = False
+    early_fusion_technique: str = "concat"
     layer_norm: bool = False
     state_obs_key: str = ""
 
@@ -330,7 +341,18 @@ class VisionMLPHead(linen.Module):
             latent_layernorm = linen.LayerNorm()
             hidden = latent_layernorm(hidden)
         if self.state_obs_key:
-            hidden = jnp.concatenate([hidden, data[self.state_obs_key]], axis=-1)
+            if self.early_fusion_technique == "concat":
+                hidden = jnp.concatenate(
+                    [hidden, data[self.state_obs_key]], axis=-1
+                )  # TODO: Try with dedicated state network
+            elif self.early_fusion_technique == "sum":
+                state = data[self.state_obs_key]
+                # project to do summation as L.shape != S.shape
+                state = linen.Dense(hidden.shape[-1], name="state_proj")(state)
+                hidden = hidden + state
+            else:
+                # TODO: FiLM
+                pass
         return MLP(
             layer_sizes=self.layer_sizes,
             activation=self.activation,
@@ -528,6 +550,7 @@ def make_policy_network_vision(
     activation: ActivationFn = linen.swish,
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
     layer_norm: bool = False,
+    early_fusion_technique: str = "concat",
     state_obs_key: str = "",
     normalise_channels: bool = False,
     pixel_keys: Optional[Sequence[str]] = None,
@@ -543,6 +566,7 @@ def make_policy_network_vision(
         activation=activation,
         kernel_init=kernel_init,
         layer_norm=layer_norm,
+        early_fusion_technique=early_fusion_technique,
         normalise_channels=normalise_channels,
         state_obs_key=state_obs_key,
         pixel_keys=None if pixel_keys is None else tuple(pixel_keys),
@@ -569,6 +593,7 @@ def make_value_network_vision(
     activation: ActivationFn = linen.swish,
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
     layer_norm: bool = False,
+    early_fusion_technique: str = "concat",
     state_obs_key: str = "",
     normalise_channels: bool = False,
     pixel_keys: Optional[Sequence[str]] = None,
@@ -582,6 +607,7 @@ def make_value_network_vision(
         activation=activation,
         kernel_init=kernel_init,
         layer_norm=layer_norm,
+        early_fusion_technique=early_fusion_technique,
         normalise_channels=normalise_channels,
         state_obs_key=state_obs_key,
         pixel_keys=None if pixel_keys is None else tuple(pixel_keys),
@@ -617,6 +643,7 @@ class VisionQMLP(linen.Module):
     activation: ActivationFn = linen.relu
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform()
     layer_norm: bool = False
+    early_fusion_technique: str = "concat"
     normalise_channels: bool = False
     state_obs_key: str = ""
     pixel_keys: Optional[Tuple[str, ...]] = None
@@ -632,7 +659,17 @@ class VisionQMLP(linen.Module):
             latent_layernorm = linen.LayerNorm()
             latent = latent_layernorm(latent)
         if self.state_obs_key:
-            latent = jnp.concatenate([latent, data[self.state_obs_key]], axis=-1)
+            if self.early_fusion_technique == "concat":
+                latent = jnp.concatenate(
+                    [latent, data[self.state_obs_key]], axis=-1
+                )  # TODO: Try with dedicated state network
+            elif self.early_fusion_technique == "sum":
+                state = data[self.state_obs_key]
+                state = linen.Dense(latent.shape[-1], name="state_proj")(state)
+                latent = latent + state
+            else:
+                # TODO: FiLM
+                pass
         hidden = jnp.concatenate([latent, actions], axis=-1)
         res = []
         for _ in range(self.n_critics):
@@ -654,6 +691,7 @@ def make_q_network_vision(
     activation: ActivationFn = linen.relu,
     n_critics: int = 2,
     layer_norm: bool = False,
+    early_fusion_technique: str = "concat",
     state_obs_key: str = "",
     normalise_channels: bool = False,
     pixel_keys: Optional[Sequence[str]] = None,
@@ -672,6 +710,7 @@ def make_q_network_vision(
         n_critics=n_critics,
         activation=activation,
         layer_norm=layer_norm,
+        early_fusion_technique=early_fusion_technique,
         normalise_channels=normalise_channels,
         state_obs_key=state_obs_key,
         pixel_keys=None if pixel_keys is None else tuple(pixel_keys),
@@ -742,6 +781,7 @@ def _make_vision_head_network(
     activation: ActivationFn,
     kernel_init: Initializer,
     layer_norm: bool,
+    early_fusion_technique: str,
     state_obs_key: str,
     squeeze_output: bool,
 ) -> FeedForwardNetwork:
@@ -754,6 +794,7 @@ def _make_vision_head_network(
         activation=activation,
         kernel_init=kernel_init,
         layer_norm=layer_norm,
+        early_fusion_technique=early_fusion_technique,
         state_obs_key=state_obs_key,
     )
     dummy_obs = {VISION_LATENT_KEY: jnp.zeros((1, latent_size))}
@@ -785,6 +826,7 @@ def make_policy_head_network_vision(
     activation: ActivationFn = linen.swish,
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
     layer_norm: bool = False,
+    early_fusion_technique: str = "concat",
     state_obs_key: str = "",
     pixel_keys: Optional[Sequence[str]] = None,
 ) -> FeedForwardNetwork:
@@ -803,6 +845,7 @@ def make_policy_head_network_vision(
         activation=activation,
         kernel_init=kernel_init,
         layer_norm=layer_norm,
+        early_fusion_technique=early_fusion_technique,
         state_obs_key=state_obs_key,
         squeeze_output=False,
     )
@@ -816,6 +859,7 @@ def make_value_head_network_vision(
     activation: ActivationFn = linen.swish,
     kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
     layer_norm: bool = False,
+    early_fusion_technique: str = "concat",
     state_obs_key: str = "",
     pixel_keys: Optional[Sequence[str]] = None,
 ) -> FeedForwardNetwork:
@@ -833,6 +877,7 @@ def make_value_head_network_vision(
         activation=activation,
         kernel_init=kernel_init,
         layer_norm=layer_norm,
+        early_fusion_technique=early_fusion_technique,
         state_obs_key=state_obs_key,
         squeeze_output=True,
     )

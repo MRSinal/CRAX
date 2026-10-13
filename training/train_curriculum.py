@@ -112,6 +112,7 @@ def main():
                 alg_name,
                 policy_obs_key=state_obs_key,
                 value_obs_key=state_obs_key,
+                early_fusion_technique=config.vision_early_fusion,
                 **layer_norm_kwargs,
             )
             train_kwargs['augment_pixels'] = config.vision_augment
