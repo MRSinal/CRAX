@@ -1196,27 +1196,28 @@ class SafePush(PipelineEnv, ABC):
 
         # Build observation with separate goal and hazard lidars plus individual hazard compasses
         # Added: block observations for push task
+        # TODO: Add gap flag to turn off and on
         obs_parts = [
             accelerometer, # (3,)
             velocimeter, # (3,)
             gyro, # (3,)
             magnetometer, # (3,)
-        ]
-        if self._include_goal_lidar:
-            obs_parts.append(goal_lidar_obs) # (16,) - Goal Lidar
-        if self._include_hazard_lidar:
-            obs_parts.append(hazard_lidar_obs) # (16,) - Hazard Lidar
-        if self._include_goal_comp:
-            obs_parts.append(goal_comp) # (2,) - Goal compass
-        if self._include_hazard_comp:
-            obs_parts.append(hazard_compasses_flat) # (16,) - Individual hazard compasses (8 hazards * 2 each)
-        obs_parts += [
             # Block observations (new for push task)
             agent_to_block_comp,  # (2,) - Compass from agent to block
             block_to_goal_comp,  # (2,) - Compass from block to goal
             jp.array([agent_to_block_dist]),  # (1,) - Distance from agent to block (normalized)
             jp.array([block_to_goal_dist]),  # (1,) - Distance from block to goal (normalized)
+
         ]
+        if self._include_hazard_lidar:
+            obs_parts.append(hazard_lidar_obs) # (16,) - Hazard Lidar
+        if self._include_goal_lidar:
+            obs_parts.append(goal_lidar_obs) # (16,) - Goal Lidar
+        if self._include_goal_comp:
+            obs_parts.append(goal_comp) # (2,) - Goal compass
+        if self._include_hazard_comp:
+            obs_parts.append(hazard_compasses_flat) # (16,) - Individual hazard compasses (8 hazards * 2 each)
+
         obs = jp.concatenate(obs_parts)
 
         return obs

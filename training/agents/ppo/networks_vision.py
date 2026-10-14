@@ -51,6 +51,8 @@ def make_ppo_networks_vision(
     value_pixel_keys: Optional[Sequence[str]] = None,
     cost_value_pixel_keys: Optional[Sequence[str]] = None,
     gap_lambda: Optional[float] = None,
+    layer_norm: bool = False,
+    early_fusion_technique: str = "concat",
 ) -> PPONetworks:
     """Make Vision PPO networks with preprocessor.
 
@@ -98,18 +100,18 @@ def make_ppo_networks_vision(
         cost_value_obs_key = value_obs_key
 
     all_pixel_keys = tuple(
-        sorted(k for k in observation_size if k.startswith('pixels/'))
+        sorted(k for k in observation_size if k.startswith("pixels/"))
     )
 
     def _normalise(keys):
         return all_pixel_keys if keys is None else tuple(keys)
 
     routed = {
-        'policy': _normalise(policy_pixel_keys),
-        'value': _normalise(value_pixel_keys),
+        "policy": _normalise(policy_pixel_keys),
+        "value": _normalise(value_pixel_keys),
     }
     if cost_value_hidden_layer_sizes is not None:
-        routed['cost_value'] = _normalise(cost_value_pixel_keys)
+        routed["cost_value"] = _normalise(cost_value_pixel_keys)
 
     if share_encoder and len(set(routed.values())) > 1:
         raise ValueError(
@@ -127,7 +129,7 @@ def make_ppo_networks_vision(
         encoder_network = networks.make_vision_encoder_network(
             observation_size=observation_size,
             normalise_channels=normalise_channels,
-            pixel_keys=routed['policy'],
+            pixel_keys=routed["policy"],
         )
         # Shape-only: figure out the encoder's output width so the heads can
         # size their first Dense layer. Values are discarded. Only used here
@@ -135,7 +137,7 @@ def make_ppo_networks_vision(
         dummy_pixel_obs = {
             key: jp.zeros((1,) + tuple(shape))
             for key, shape in observation_size.items()
-            if key.startswith('pixels/')
+            if key.startswith("pixels/")
         }
         dummy_encoder_params = encoder_network.init(jax.random.PRNGKey(0))
         latent_size = encoder_network.apply(
@@ -151,6 +153,8 @@ def make_ppo_networks_vision(
             hidden_layer_sizes=policy_hidden_layer_sizes,
             state_obs_key=policy_obs_key,
             gap_lambda=gap_lambda,
+            layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
         )
 
         value_network = networks.make_value_head_network_vision(
@@ -160,6 +164,8 @@ def make_ppo_networks_vision(
             activation=activation,
             hidden_layer_sizes=value_hidden_layer_sizes,
             state_obs_key=value_obs_key,
+            layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
         )
 
         cost_value_network = None
@@ -171,6 +177,8 @@ def make_ppo_networks_vision(
                 activation=activation,
                 hidden_layer_sizes=cost_value_hidden_layer_sizes,
                 state_obs_key=cost_value_obs_key,
+                layer_norm=layer_norm,
+                early_fusion_technique=early_fusion_technique,
             )
     else:
         encoder_network = None
@@ -181,6 +189,8 @@ def make_ppo_networks_vision(
             activation=activation,
             hidden_layer_sizes=policy_hidden_layer_sizes,
             state_obs_key=policy_obs_key,
+            layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
             normalise_channels=normalise_channels,
             pixel_keys=policy_pixel_keys,
             gap_lambda=gap_lambda,
@@ -192,6 +202,8 @@ def make_ppo_networks_vision(
             activation=activation,
             hidden_layer_sizes=value_hidden_layer_sizes,
             state_obs_key=value_obs_key,
+            layer_norm=layer_norm,
+            early_fusion_technique=early_fusion_technique,
             normalise_channels=normalise_channels,
             pixel_keys=value_pixel_keys,
         )
@@ -204,6 +216,8 @@ def make_ppo_networks_vision(
                 activation=activation,
                 hidden_layer_sizes=cost_value_hidden_layer_sizes,
                 state_obs_key=cost_value_obs_key,
+                layer_norm=layer_norm,
+                early_fusion_technique=early_fusion_technique,
                 normalise_channels=normalise_channels,
                 pixel_keys=cost_value_pixel_keys,
             )

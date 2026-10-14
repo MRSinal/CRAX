@@ -294,6 +294,17 @@ def main():
             network_routing.setdefault('value_obs_key', state_obs_key)
             if config.proprio_mlp:
                 network_routing['gap_lambda'] = config.gap_lambda
+            # The SAC builders name their layer-norm toggles per-head, the PPO
+            # family uses a single `layer_norm`; map the one CLI flag to each.
+            if alg_name in {'sac', 'sac_lag', 'sac_pid'}:
+                network_routing['policy_network_layer_norm'] = config.vision_layer_norm
+                network_routing['q_network_layer_norm'] = config.vision_layer_norm
+            else:
+                network_routing['layer_norm'] = config.vision_layer_norm
+            # Early-fusion technique is a single value for every head (not
+            # per-head like layer-norm), so route the one CLI flag through for
+            # both the PPO and SAC families.
+            network_routing['early_fusion_technique'] = config.vision_early_fusion
             train_kwargs['network_factory'] = make_vision_network_factory(
                 alg_name,
                 **network_routing,
