@@ -249,6 +249,10 @@ def train(
         post_step_fn: Optional[PostStepFn] = None,
         extra_fields: Tuple[str, ...] = ('truncation', 'episode_metrics', 'episode_done'),
         init_aux_state_fn: Optional[Callable[[], Any]] = None,
+        # GAP (networks._state_features), obs['phase'] comes from the pixel wrapper
+        gap_frac: float = 0.5,
+        gap_random_phase: bool = False,
+        proprio_dropout: float = 0.0,
 ):
     """PPO training.
 
@@ -330,6 +334,12 @@ def train(
         For constrained RL, add 'cost'.
       init_aux_state_fn: Optional function to initialize aux_state in TrainingState.
         Returns initial aux_state value. Used for Lagrange multipliers, PID state, etc.
+      gap_frac: share of num_timesteps with GAP on. Afterwards obs['phase'] is
+        set to 0, so the gradient scaling stops.
+      gap_random_phase: GAP control. The phase values of each batch are
+        shuffled across samples, so they lose their link to visible hazards.
+      proprio_dropout: share of samples whose policy proprio MLP output is set
+        to 0 in the update (the "Mask" baseline of the GAP paper).
 
     Returns:
       Tuple of (make_policy function, network params, metrics)
@@ -621,6 +631,24 @@ def train(
             pmap_axis_name=pmap_axis_name,
         )
 
+        # GAP schedule and random-phase control. Without the GAP flags no key is split, so runs match upstream.
+        gap_metrics = {}
+        if isinstance(data.observation, Mapping) and 'phase' in data.observation:
+            key_sgd, key_phase = jax.random.split(key_sgd)
+            phase = data.observation['phase']
+            if gap_random_phase:
+                # Same phase values, shuffled across samples, so the link to hazards is lost.
+                phase = jax.random.permutation(key_phase, phase.ravel()).reshape(phase.shape)
+            steps = training_state.env_steps.hi * 2.0 ** 32 + training_state.env_steps.lo
+            phase = jnp.where(steps < gap_frac * num_timesteps, phase, 0.0)
+            data = data._replace(observation={**data.observation, 'phase': phase})
+            gap_metrics = {'gap_phase_mean': jnp.mean(phase), 'gap_phase_active': jnp.mean(phase > 0)}
+        if proprio_dropout > 0:
+            # One mask per batch, reused in all SGD epochs. Rollouts and evals always see the full proprio.
+            key_sgd, key_drop = jax.random.split(key_sgd)
+            keep = jax.random.bernoulli(key_drop, 1.0 - proprio_dropout, data.reward.shape + (1,))
+            data = data._replace(observation={**data.observation, 'proprio_keep': keep.astype(jnp.float32)})
+
         (optimizer_state, params, _), metrics = jax.lax.scan(
             functools.partial(
                 sgd_step, data=data, normalizer_params=normalizer_params, aux_state=training_state.aux_state
@@ -629,6 +657,7 @@ def train(
             (),
             length=num_updates_per_batch,
         )
+        metrics = {**metrics, **gap_metrics}
 
         new_training_state = TrainingState(
             optimizer_state=optimizer_state,

@@ -261,6 +261,29 @@ class VisionEncoder(linen.Module):
         return jnp.concatenate(flat_outs, axis=-1)
 
 
+def _state_features(module: linen.Module, data: dict) -> jnp.ndarray:
+  """State features that a head joins with its CNN latent.
+
+  With `module.gap_lambda` None this is the raw state, as before. Otherwise
+  the state goes through a small proprio MLP first (policy head only). If the
+  batch carries `phase` (GAP, Lu et al. 2026), the forward pass is unchanged
+  and the gradient into that MLP is scaled per sample by
+  1 - gap_lambda * phase. `proprio_keep` (proprio dropout baseline, added in
+  the PPO training step only) zeroes the MLP output of dropped samples.
+  """
+  state = data[module.state_obs_key]
+  if module.gap_lambda is None:
+    return state
+  hidden = MLP(layer_sizes=(64, 64), activation=module.activation, activate_final=True,
+               name='ProprioEncoder')(state)
+  if 'phase' in data:
+    scale = 1.0 - module.gap_lambda * data['phase']
+    hidden = scale * hidden + (1.0 - scale) * jax.lax.stop_gradient(hidden)
+  if 'proprio_keep' in data:
+    hidden = hidden * data['proprio_keep']
+  return hidden
+
+
 class VisionMLP(linen.Module):
     """Applies a VisionEncoder CNN backbone then an MLP.
 
@@ -281,6 +304,7 @@ class VisionMLP(linen.Module):
     state_obs_key: str = ""
     policy_head: bool = True  # = False is useful for frozen encoders.
     pixel_keys: Optional[Tuple[str, ...]] = None
+    gap_lambda: Optional[float] = None  # Policy only, see `_state_features`.
 
     @linen.compact
     def __call__(self, data: dict):
@@ -297,10 +321,10 @@ class VisionMLP(linen.Module):
         if self.state_obs_key:
             if self.early_fusion_technique == "concat":
                 latent = jnp.concatenate(
-                    [latent, data[self.state_obs_key]], axis=-1
+                    [latent, _state_features(self, data)], axis=-1
                 )  # TODO: Try with dedicated state network
             elif self.early_fusion_technique == "sum":
-                state = data[self.state_obs_key]
+                state = _state_features(self, data)
                 # project to do summation as L.shape != S.shape
                 state = linen.Dense(latent.shape[-1], name="state_proj")(state)
                 latent = latent + state
@@ -333,6 +357,7 @@ class VisionMLPHead(linen.Module):
     early_fusion_technique: str = "concat"
     layer_norm: bool = False
     state_obs_key: str = ""
+    gap_lambda: Optional[float] = None  # Policy only, see `_state_features`.
 
     @linen.compact
     def __call__(self, data: dict):
@@ -343,10 +368,10 @@ class VisionMLPHead(linen.Module):
         if self.state_obs_key:
             if self.early_fusion_technique == "concat":
                 hidden = jnp.concatenate(
-                    [hidden, data[self.state_obs_key]], axis=-1
+                    [hidden, _state_features(self, data)], axis=-1
                 )  # TODO: Try with dedicated state network
             elif self.early_fusion_technique == "sum":
-                state = data[self.state_obs_key]
+                state = _state_features(self, data)
                 # project to do summation as L.shape != S.shape
                 state = linen.Dense(hidden.shape[-1], name="state_proj")(state)
                 hidden = hidden + state
@@ -554,31 +579,33 @@ def make_policy_network_vision(
     state_obs_key: str = "",
     normalise_channels: bool = False,
     pixel_keys: Optional[Sequence[str]] = None,
+    gap_lambda: Optional[float] = None,
 ) -> FeedForwardNetwork:
-    """Creates a policy network for vision inputs.
+  """Creates a policy network for vision inputs.
 
-    `pixel_keys` routes cameras: None = every `pixels/*` key (sorted), an
-    explicit sequence = exactly those keys, `()` = no cameras at all (a
-    state-only network, which requires a `state_obs_key`).
-    """
-    module = VisionMLP(
-        layer_sizes=list(hidden_layer_sizes) + [output_size],
-        activation=activation,
-        kernel_init=kernel_init,
-        layer_norm=layer_norm,
-        early_fusion_technique=early_fusion_technique,
-        normalise_channels=normalise_channels,
-        state_obs_key=state_obs_key,
-        pixel_keys=None if pixel_keys is None else tuple(pixel_keys),
-    )
+  `pixel_keys` routes cameras: None = every `pixels/*` key (sorted), an
+  explicit sequence = exactly those keys, `()` = no cameras at all (a
+  state-only network, which requires a `state_obs_key`). A float
+  `gap_lambda` adds a proprio MLP with GAP (see `_state_features`).
+  """
+  module = VisionMLP(
+      layer_sizes=list(hidden_layer_sizes) + [output_size],
+      activation=activation,
+      kernel_init=kernel_init,
+      layer_norm=layer_norm,
+      normalise_channels=normalise_channels,
+      state_obs_key=state_obs_key,
+      pixel_keys=None if pixel_keys is None else tuple(pixel_keys),
+      gap_lambda=gap_lambda,
+  )
 
-    def apply(processor_params, policy_params, obs):
-        if state_obs_key:
-            state_obs = preprocess_observations_fn(
-                obs[state_obs_key], normalizer_select(processor_params, state_obs_key)
-            )
-            obs = {**obs, state_obs_key: state_obs}
-        return module.apply(policy_params, obs)
+  def apply(processor_params, policy_params, obs):
+    if state_obs_key:
+      state_obs = preprocess_observations_fn(
+          obs[state_obs_key], normalizer_select(processor_params, state_obs_key)
+      )
+      obs = {**obs, state_obs_key: state_obs}
+    return module.apply(policy_params, obs)
 
     dummy_obs = {
         key: jnp.zeros((1,) + tuple(shape)) for key, shape in observation_size.items()
@@ -784,20 +811,25 @@ def _make_vision_head_network(
     early_fusion_technique: str,
     state_obs_key: str,
     squeeze_output: bool,
+    gap_lambda: Optional[float] = None,
 ) -> FeedForwardNetwork:
-    """Shared helper for the policy/value/cost-value heads of a shared-encoder
-    vision network. `latent_size` is the (already known) output width of the
-    `VisionEncoder` this head will be fed from at apply time.
-    """
-    head_module = VisionMLPHead(
-        layer_sizes=list(layer_sizes),
-        activation=activation,
-        kernel_init=kernel_init,
-        layer_norm=layer_norm,
-        early_fusion_technique=early_fusion_technique,
-        state_obs_key=state_obs_key,
-    )
-    dummy_obs = {VISION_LATENT_KEY: jnp.zeros((1, latent_size))}
+  """Shared helper for the policy/value/cost-value heads of a shared-encoder
+  vision network. `latent_size` is the (already known) output width of the
+  `VisionEncoder` this head will be fed from at apply time.
+  """
+  head_module = VisionMLPHead(
+      layer_sizes=list(layer_sizes),
+      activation=activation,
+      kernel_init=kernel_init,
+      state_obs_key=state_obs_key,
+      gap_lambda=gap_lambda,
+  )
+  dummy_obs = {VISION_LATENT_KEY: jnp.zeros((1, latent_size))}
+  if state_obs_key:
+    dummy_obs[state_obs_key] = jnp.zeros(
+        (1,) + tuple(observation_size[state_obs_key]))
+
+  def apply(processor_params, head_params, obs):
     if state_obs_key:
         dummy_obs[state_obs_key] = jnp.zeros(
             (1,) + tuple(observation_size[state_obs_key])
@@ -829,26 +861,29 @@ def make_policy_head_network_vision(
     early_fusion_technique: str = "concat",
     state_obs_key: str = "",
     pixel_keys: Optional[Sequence[str]] = None,
+    gap_lambda: Optional[float] = None,
 ) -> FeedForwardNetwork:
-    """Policy head over a precomputed shared-VisionEncoder latent.
+  """Policy head over a precomputed shared-VisionEncoder latent.
 
-    `pixel_keys` is accepted for API symmetry with the unshared builders but
-    is unused: the head sees only the latent, so camera routing is decided by
-    the shared `VisionEncoder` that produced it.
-    """
-    del pixel_keys
-    return _make_vision_head_network(
-        layer_sizes=list(hidden_layer_sizes) + [output_size],
-        observation_size=observation_size,
-        latent_size=latent_size,
-        preprocess_observations_fn=preprocess_observations_fn,
-        activation=activation,
-        kernel_init=kernel_init,
-        layer_norm=layer_norm,
-        early_fusion_technique=early_fusion_technique,
-        state_obs_key=state_obs_key,
-        squeeze_output=False,
-    )
+  `pixel_keys` is accepted for API symmetry with the unshared builders but
+  is unused: the head sees only the latent, so camera routing is decided by
+  the shared `VisionEncoder` that produced it. A float `gap_lambda` adds a
+  proprio MLP with GAP (see `_state_features`).
+  """
+  del pixel_keys
+  return _make_vision_head_network(
+      layer_sizes=list(hidden_layer_sizes) + [output_size],
+      observation_size=observation_size,
+      latent_size=latent_size,
+      preprocess_observations_fn=preprocess_observations_fn,
+      activation=activation,
+      kernel_init=kernel_init,
+      state_obs_key=state_obs_key,
+      squeeze_output=False,
+      layer_norm=layer_norm,
+      early_fusion_technique=early_fusion_technique,
+      gap_lambda=gap_lambda,
+  )
 
 
 def make_value_head_network_vision(

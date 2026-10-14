@@ -1196,6 +1196,7 @@ class SafePush(PipelineEnv, ABC):
 
         # Build observation with separate goal and hazard lidars plus individual hazard compasses
         # Added: block observations for push task
+        # TODO: Add gap flag to turn off and on
         obs_parts = [
             accelerometer, # (3,)
             velocimeter, # (3,)
@@ -1241,9 +1242,9 @@ class SafePush(PipelineEnv, ABC):
         """Returns the size of the observation vector."""
         return (
                 12 +  # Sensor data (3 each for accel, vel, gyro, mag)
-                self._lidar_num_bins * 2 +  # Goal and hazard lidars
-                2 +  # Goal compass (agent to goal)
-                self._hazard_compass_k * 2 +  # Hazard compasses
+                self._lidar_num_bins * (self._include_goal_lidar + self._include_hazard_lidar) +
+                2 * self._include_goal_comp +
+                self._hazard_compass_k * 2 * self._include_hazard_comp +
                 # Block observations (new for push task)
                 2 +  # Agent-to-block compass
                 2 +  # Block-to-goal compass

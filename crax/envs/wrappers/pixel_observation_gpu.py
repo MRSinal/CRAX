@@ -79,6 +79,10 @@ class GpuPixelObservationWrapper(Wrapper):
         obs_mode: 'pixels', 'pixels+state', or 'state'.
         frame_stack: Number of frames to stack channel-wise.
         use_shadows: Whether MJWarp should ray-trace shadows (slower).
+        gap_phase_dist: If set, add obs['phase'] for GAP, the closeness in
+            [0, 1] of the nearest hazard whose centre is inside the first
+            camera's image. It reaches 0 at this distance in metres. Needs an
+            env with hazards.
     """
 
     def __init__(
@@ -92,6 +96,7 @@ class GpuPixelObservationWrapper(Wrapper):
             obs_mode: str = 'pixels',
             frame_stack: int = 1,
             use_shadows: bool = False,
+            gap_phase_dist: Optional[float] = None,
     ):
         super().__init__(env)
 
@@ -134,6 +139,13 @@ class GpuPixelObservationWrapper(Wrapper):
         self._cam_ids: Tuple[int, ...] = tuple(cam_ids)
         # TODO: this can be removed technically, but needs refactoring to also remove single cam caller
         self._cam_id = self._cam_ids[0]
+
+        self._gap_phase_dist = gap_phase_dist
+        if gap_phase_dist is not None:
+            self._hazard_ids = jnp.array(self.env._hazard_mocap_ids, dtype=jnp.int32)
+            # MuJoCo stores only the vertical FOV. The horizontal one follows from the aspect ratio.
+            self._tan_half_fovy = float(np.tan(np.deg2rad(mj_model.cam_fovy[self._cam_id]) / 2))
+            self._tan_half_fovx = self._tan_half_fovy * width / height
 
         # Scratch MjData purely to seed MJWarp's model/render-context
         # construction (mesh/texture/light setup) — its dynamic fields are
@@ -230,7 +242,7 @@ class GpuPixelObservationWrapper(Wrapper):
             # graph instead of participating in XLA's, avoiding the nesting
             # entirely. This is also what mujoco_warp's own jax_callable
             # usage does.
-            graph_mode=ffi.GraphMode.WARP,
+            graph_mode=ffi.GraphMode.WARP if wp.get_device().is_cuda else ffi.GraphMode.NONE,
         )
 
         def render_pixels(pipeline_state) -> Dict[str, jnp.ndarray]:
@@ -249,12 +261,23 @@ class GpuPixelObservationWrapper(Wrapper):
     def _render_pixels(self, pipeline_state) -> Dict[str, jnp.ndarray]:
         return self._render_pixels_fn(pipeline_state)
 
-    def _build_obs(self, state_obs, pixels: Mapping[str, jnp.ndarray]):
+    def _hazard_phase(self, pipeline_state) -> jnp.ndarray:
+        rel = pipeline_state.mocap_pos[:, self._hazard_ids] - pipeline_state.cam_xpos[:, self._cam_id, None]
+        # Hazards in the camera frame. A MuJoCo camera looks along -z with x to the right and y up.
+        x, y, z = jnp.moveaxis(jnp.einsum('bij,bhi->bhj', pipeline_state.cam_xmat[:, self._cam_id], rel), -1, 0)
+        in_view = (jnp.abs(x) <= -z * self._tan_half_fovx) & (jnp.abs(y) <= -z * self._tan_half_fovy)
+        # Horizontal distance, because the camera sits above the floor-level hazards.
+        closeness = jnp.clip(1.0 - jnp.linalg.norm(rel[..., :2], axis=-1) / self._gap_phase_dist, 0.0, 1.0)
+        return jnp.max(jnp.where(in_view, closeness, 0.0), axis=-1, initial=0.0)
+
+    def _build_obs(self, state_obs, pixels: Mapping[str, jnp.ndarray], pipeline_state=None):
         if self._obs_mode == 'state':
             return state_obs
         obs: Dict[str, jnp.ndarray] = {
             f'pixels/{name}': pixels[name] for name in self._cameras
         }
+        if self._gap_phase_dist is not None:
+            obs['phase'] = self._hazard_phase(pipeline_state)[:, None]
         if self._obs_mode == 'pixels':
             return obs
         # pixels+state
@@ -318,7 +341,7 @@ class GpuPixelObservationWrapper(Wrapper):
         # (below) is never aware we replace `obs` with a pixel dict. Feeding
         # it our dict back in would break its internal action_repeat scan.
         state.info['_orig_state_obs'] = orig_obs
-        return state.replace(obs=self._build_obs(orig_obs, pixels_out))
+        return state.replace(obs=self._build_obs(orig_obs, pixels_out, state.pipeline_state))
 
     def step(self, state: State, action: jax.Array) -> State:
         inner_state = state.replace(obs=state.info['_orig_state_obs'])
@@ -349,7 +372,7 @@ class GpuPixelObservationWrapper(Wrapper):
 
         state.info['_orig_state_obs'] = orig_obs
 
-        return state.replace(obs=self._build_obs(orig_obs, pixels_out))
+        return state.replace(obs=self._build_obs(orig_obs, pixels_out, state.pipeline_state))
 
     # ------------------------------------------------------------------
     # Observation size
@@ -365,6 +388,8 @@ class GpuPixelObservationWrapper(Wrapper):
             f'pixels/{name}': (self._height, self._width, stacked_channels)
             for name in self._cameras
         }
+        if self._gap_phase_dist is not None:
+            obs_size['phase'] = (1,)
         if self._obs_mode == 'pixels+state':
             inner_size = self.env.observation_size
             if isinstance(inner_size, int):
