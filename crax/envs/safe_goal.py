@@ -1214,8 +1214,8 @@ class SafeGoal(PipelineEnv, ABC):
         """Returns the size of the observation vector."""
         return (
             12  # Sensor data (3 each for accel, vel, gyro, mag)
-            + self.get_lidar_count(self)  # Goal and hazard lidars
-            + self.get_compass_count(self)  # Hazard compasses
+            + self.get_lidar_count()  # Goal and hazard lidars
+            + self.get_compass_count()  # Hazard compasses
         )
 
 

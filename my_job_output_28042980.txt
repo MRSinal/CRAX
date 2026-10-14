@@ -1,0 +1,722 @@
+Resolved 157 packages in 13ms
+Checked 126 packages in 279ms
+/gpfs/home6/scur0289/CRAX/crax/io/mjcf.py:492: UserWarning: Brax System, piplines and environments are not actively being maintained. Please see MJX for a well maintained JAX-based physics engine: https://github.com/google-deepmind/mujoco/tree/main/mjx. For a host of environments that use MJX, see: https://github.com/google-deepmind/mujoco_playground.
+  warnings.warn(
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/scur0289/.netrc.
+wandb: Currently logged in as: mrsinal (mrsinal-tilburg-university) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.30.0
+wandb: Run data is saved locally in /gpfs/home6/scur0289/CRAX/wandb/run-20261013_202153-safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143
+wandb: ⭐️ View project at https://wandb.ai/mrsinal-tilburg-university/crax
+wandb: 🚀 View run at https://wandb.ai/mrsinal-tilburg-university/crax/runs/safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143
+Vision mode: capped XLA_PYTHON_CLIENT_MEM_FRACTION=0.5 to leave GPU headroom for MJWarp's renderer (override by setting the env var yourself before running).
+Checking that the installation succeeded:
+Installation successful.
+
+==================================================
+Running experiment with seed 0
+==================================================
+
+Vision mode: GPU rendering (MJWarp), camera='vision', 64x64
+Warp 1.16.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.4
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA A100-SXM4-40GB" (40 GiB, sm_80, mempool enabled)
+   Kernel cache:
+     /home/scur0289/.cache/warp/1.16.0
+Module mujoco_warp._src.io b4940be load on device 'cuda:0' took 21.82 ms  (cached)
+Module mujoco_warp._src.bvh f2c5137 load on device 'cuda:0' took 16.17 ms  (cached)
+Module render__locals___render_megakernel_f1d87379 a3ec564 load on device 'cuda:0' took 15.68 ms  (cached)
+Training environment 'safe_goal_point' instantiated with difficulty 1.
+Evaluation environment 'safe_goal_point' instantiated with difficulty 1.
+[DEBUG ppo/train] train() called: num_envs=2048, num_timesteps=100000000, episode_length=1000, augment_pixels=True
+[DEBUG ppo/train] Wrapping environment...
+[DEBUG ppo/train] Environment wrapped. obs_size={'pixels/vision': (64, 64, 3), 'state': (12,)}, action_size=2
+[DEBUG ppo/train] Calling reset_fn (use_pmap=False, key_envs.shape=(1, 2048, 2))... This triggers JIT + pixel rendering.
+Module crax.envs.wrappers.pixel_observation_gpu 9bce259 load on device 'cuda:0' took 16.60 ms  (cached)
+Module mujoco_warp._src.render_util 97c6606 load on device 'cuda:0' took 14.86 ms  (cached)
+[DEBUG ppo/train] reset_fn completed in 13.7s
+[DEBUG ppo/train] obs_shape after reset: {'pixels/vision': (64, 64, 3), 'state': (12,)}
+[DEBUG ppo/train] Creating PPO network (network_factory=network_factory)...
+[DEBUG ppo/train] PPO network created. cost_value_network=yes
+[DEBUG ppo/train] Initializing network params...
+Network parameter counts: policy=345604, value=344833, cost_value=543745, shared_encoder=75776, total=1309958
+[DEBUG ppo/train] Network params initialized. policy keys: ['LayerNorm_0', 'state_proj', 'MLP_0']
+[DEBUG ppo/train] Building obs_spec and TrainingState...
+[DEBUG ppo/train] obs_spec: {'pixels/vision': Array(shape=(3,), dtype=dtype('float32')), 'state': Array(shape=(12,), dtype=dtype('float32'))}
+[DEBUG ppo/train] obs_spec after _remove_pixels: {'state': Array(shape=(12,), dtype=dtype('float32'))}
+[DEBUG ppo/train] TrainingState created.
+[DEBUG ppo/train] Replicating training state to devices...
+[DEBUG ppo/train] Training state replicated.
+[DEBUG ppo/train] Creating Evaluator (num_eval_envs=128)...
+[DEBUG ppo/train] Evaluator created.
+[DEBUG ppo/train] Running initial evaluation...
+[DEBUG ppo/train] Initial evaluation completed in 43.6s
+Step 0:
+  eval/episode_cost: 538.9979248046875
+  eval/episode_ctrl_cost: 0.934097170829773
+  eval/episode_reward: 0.4296875
+  eval/episode_cost_std: 66.92499542236328
+  eval/episode_ctrl_cost_std: 0.018331028521060944
+  eval/episode_reward_std: 0.5820705890655518
+  eval/epoch_eval_time: 43.04978704452515
+[DEBUG ppo/train] Entering main training loop: 4 iterations, 1 resets/eval, 96 steps/epoch
+[DEBUG ppo/train] Starting training_epoch_with_timing (iter 0)... (includes JIT compile on first call)
+Step 1048576:
+  training/cost_policy_loss: 0.0781110745544235
+  training/cost_v_loss: 0.9191277225812277
+  training/cost_violation: 0.24361914892991385
+  training/mean_cost: 0.26861915985743207
+  training/reward_policy_loss: 0.0841923678914706
+Step 2097152:
+  training/cost_policy_loss: -0.009891845809761435
+  training/cost_v_loss: 0.21697483770549297
+  training/cost_violation: 0.030826478730887175
+  training/mean_cost: 0.055826476658694446
+  training/reward_policy_loss: 0.013700343581149355
+  episodic/cost: 132.17779541015625
+  episodic/ctrl_cost: 0.7518035769462585
+  episodic/reward: 0.83056640625
+  episodic/sum_reward: 0.83056640625
+Step 3145728:
+  training/cost_policy_loss: 0.0047401582123711705
+  training/cost_v_loss: 0.019431599183008075
+  training/cost_violation: -0.020263297948986292
+  training/mean_cost: 0.0047367027145810425
+  training/reward_policy_loss: 0.0004044504930789117
+Step 4194304:
+  training/cost_policy_loss: 0.008681817329488695
+  training/cost_v_loss: 0.05138331465423107
+  training/cost_violation: -0.011931797955185175
+  training/mean_cost: 0.013068202650174499
+  training/reward_policy_loss: 0.002168958308175206
+  episodic/cost: 10.60634994506836
+  episodic/ctrl_cost: 0.6802681684494019
+  episodic/reward: 4.13623046875
+  episodic/sum_reward: 4.13623046875
+Step 5242880:
+  training/cost_policy_loss: 0.004146431805565953
+  training/cost_v_loss: 0.09942520782351494
+  training/cost_violation: -0.0012909537181258202
+  training/mean_cost: 0.02370904735289514
+  training/reward_policy_loss: 0.013373012014199048
+Step 6291456:
+  training/cost_policy_loss: 0.013393067521974444
+  training/cost_v_loss: 0.021205961937084794
+  training/cost_violation: -0.018281302880495787
+  training/mean_cost: 0.006718696793541312
+  training/reward_policy_loss: 0.0009825968691075104
+  episodic/cost: 14.390985488891602
+  episodic/ctrl_cost: 0.6596975326538086
+  episodic/reward: 10.31591796875
+  episodic/sum_reward: 10.31591796875
+Step 7340032:
+  training/cost_policy_loss: 0.015003427630290389
+  training/cost_v_loss: 0.06927292887121439
+  training/cost_violation: -0.003932353807613254
+  training/mean_cost: 0.0210676456335932
+  training/reward_policy_loss: 0.0044965496635995805
+Step 8388608:
+  training/cost_policy_loss: 0.007724601477093529
+  training/cost_v_loss: 0.050888083409518
+  training/cost_violation: -0.007677926914766431
+  training/mean_cost: 0.017322072759270668
+  training/reward_policy_loss: 0.012046938529238105
+  episodic/cost: 19.42074966430664
+  episodic/ctrl_cost: 0.6505924463272095
+  episodic/reward: 16.046875
+  episodic/sum_reward: 16.046875
+Step 9437184:
+  training/cost_policy_loss: 0.015274975216016173
+  training/cost_v_loss: 0.05799064598977566
+  training/cost_violation: -0.004186652600765228
+  training/mean_cost: 0.02081334893591702
+  training/reward_policy_loss: 0.005775126162916422
+Step 10485760:
+  training/cost_policy_loss: 0.007979259011335671
+  training/cost_v_loss: 0.05074379360303283
+  training/cost_violation: -0.0067857911344617605
+  training/mean_cost: 0.018214209703728557
+  training/reward_policy_loss: 0.011585819302126765
+  episodic/cost: 19.601184844970703
+  episodic/ctrl_cost: 0.6557053327560425
+  episodic/reward: 20.08056640625
+  episodic/sum_reward: 20.08056640625
+Step 11534336:
+  training/cost_policy_loss: 0.015981171047315
+  training/cost_v_loss: 0.053832718171179295
+  training/cost_violation: -0.004127916414290667
+  training/mean_cost: 0.020872082328423858
+  training/reward_policy_loss: 0.006091316812671721
+Step 12582912:
+  training/cost_policy_loss: 0.008346992186488933
+  training/cost_v_loss: 0.06176486983895302
+  training/cost_violation: -0.0009265169501304626
+  training/mean_cost: 0.024073484120890498
+  training/reward_policy_loss: 0.01205593126360327
+  episodic/cost: 22.80177879333496
+  episodic/ctrl_cost: 0.674005389213562
+  episodic/reward: 22.791015625
+  episodic/sum_reward: 22.791015625
+Step 13631488:
+  training/cost_policy_loss: 0.014971251366659999
+  training/cost_v_loss: 0.05850155185908079
+  training/cost_violation: -0.0029477057978510857
+  training/mean_cost: 0.02205229504033923
+  training/reward_policy_loss: 0.004743963887449354
+Step 14680064:
+  training/cost_policy_loss: 0.008168884185579373
+  training/cost_v_loss: 0.05434955656528473
+  training/cost_violation: -0.004303816007450223
+  training/mean_cost: 0.020696184132248163
+  training/reward_policy_loss: 0.011689324106555432
+  episodic/cost: 21.533966064453125
+  episodic/ctrl_cost: 0.6712801456451416
+  episodic/reward: 23.37158203125
+  episodic/sum_reward: 23.37158203125
+Step 15728640:
+  training/cost_policy_loss: 0.01436663162894547
+  training/cost_v_loss: 0.06978325266391039
+  training/cost_violation: 9.772274643182755e-05
+  training/mean_cost: 0.025097724050283432
+  training/reward_policy_loss: 0.012489802204072475
+Step 16777216:
+  training/cost_policy_loss: 0.01201192111329874
+  training/cost_v_loss: 0.04694422800093889
+  training/cost_violation: -0.007037669885903597
+  training/mean_cost: 0.017962330486625433
+  training/reward_policy_loss: 0.008248257916420698
+  episodic/cost: 21.611331939697266
+  episodic/ctrl_cost: 0.6671314835548401
+  episodic/reward: 24.44140625
+  episodic/sum_reward: 24.44140625
+Step 17825792:
+  training/cost_policy_loss: 0.009856494318228215
+  training/cost_v_loss: 0.06282528582960367
+  training/cost_violation: -0.0006931484676897526
+  training/mean_cost: 0.024306852370500565
+  training/reward_policy_loss: 0.014663587207905948
+Step 18874368:
+  training/cost_policy_loss: 0.017603878397494555
+  training/cost_v_loss: 0.04475670959800482
+  training/cost_violation: -0.008179204538464546
+  training/mean_cost: 0.01682079629972577
+  training/reward_policy_loss: 0.0069146036403253675
+  episodic/cost: 20.335132598876953
+  episodic/ctrl_cost: 0.6344062685966492
+  episodic/reward: 24.63916015625
+  episodic/sum_reward: 24.63916015625
+Step 19922944:
+  training/cost_policy_loss: 0.0106769505655393
+  training/cost_v_loss: 0.06108510680496693
+  training/cost_violation: -0.0017068283632397652
+  training/mean_cost: 0.023293172474950552
+  training/reward_policy_loss: 0.015935730654746294
+Step 20971520:
+  training/cost_policy_loss: 0.013385494879912585
+  training/cost_v_loss: 0.0658328216522932
+  training/cost_violation: -0.002273368649184704
+  training/mean_cost: 0.0227266326546669
+  training/reward_policy_loss: 0.012407541507855058
+  episodic/cost: 22.375638961791992
+  episodic/ctrl_cost: 0.6238274574279785
+  episodic/reward: 25.67724609375
+  episodic/sum_reward: 25.67724609375
+Step 22020096:
+  training/cost_policy_loss: 0.012308434350416064
+  training/cost_v_loss: 0.05115033406764269
+  training/cost_violation: -0.006633533164858818
+  training/mean_cost: 0.018366466974839568
+  training/reward_policy_loss: 0.010889334604144096
+Step 23068672:
+  training/cost_policy_loss: 0.011679387534968555
+  training/cost_v_loss: 0.0748819662258029
+  training/cost_violation: 0.00023943884298205376
+  training/mean_cost: 0.02523943968117237
+  training/reward_policy_loss: 0.018103252514265478
+  episodic/cost: 22.44178009033203
+  episodic/ctrl_cost: 0.6164895296096802
+  episodic/reward: 25.9697265625
+  episodic/sum_reward: 25.9697265625
+Step 24117248:
+  training/cost_policy_loss: 0.017531064338982105
+  training/cost_v_loss: 0.05053264647722244
+  training/cost_violation: -0.00658242404460907
+  training/mean_cost: 0.018417576095089316
+  training/reward_policy_loss: 0.00944648589938879
+Step 25165824:
+  training/cost_policy_loss: 0.011755474493838847
+  training/cost_v_loss: 0.07708884961903095
+  training/cost_violation: 0.000947166234254837
+  training/mean_cost: 0.025947166606783867
+  training/reward_policy_loss: 0.018529743188992143
+  episodic/cost: 21.834415435791016
+  episodic/ctrl_cost: 0.6195214986801147
+  episodic/reward: 26.24365234375
+  episodic/sum_reward: 26.24365234375
+[DEBUG ppo/train] training_epoch_with_timing completed in 528.6s (iter 0)
+/usr/lib64/python3.13/subprocess.py:1921: RuntimeWarning: os.fork() was called. os.fork() is incompatible with multithreaded code, and JAX is multithreaded, so this will likely lead to a deadlock.
+  self.pid = _fork_exec(
+wandb: WARNING `fps` argument does not affect the frame rate of the video when providing a file path or raw bytes.
+/usr/lib64/python3.13/subprocess.py:1921: RuntimeWarning: os.fork() was called. os.fork() is incompatible with multithreaded code, and JAX is multithreaded, so this will likely lead to a deadlock.
+  self.pid = _fork_exec(
+wandb: WARNING `fps` argument does not affect the frame rate of the video when providing a file path or raw bytes.
+Step 25165824:
+  training/cost_policy_loss: 0.012905127368867397
+  training/cost_v_loss: 0.09047060459852219
+  training/cost_violation: 0.00387753383256495
+  training/mean_cost: 0.028877533972263336
+  training/reward_policy_loss: 0.012231245636940002
+[periodic vision video] step 25165824: saved videos/safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143_step25165824_fixedfar.mp4
+[periodic vision video] step 25165824: saved videos/safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143_step25165824_vision.mp4
+Step 25165824:
+  training/cost_policy_loss: 0.012905127368867397
+  training/cost_v_loss: 0.09047060459852219
+  training/cost_violation: 0.00387753383256495
+  training/mean_cost: 0.028877533972263336
+  training/reward_policy_loss: 0.012231245636940002
+  eval/episode_cost: 18.496654510498047
+  eval/episode_ctrl_cost: 0.6112445592880249
+  eval/episode_reward: 24.703125
+  eval/episode_cost_std: 9.47713565826416
+  eval/episode_ctrl_cost_std: 0.012598379515111446
+  eval/episode_reward_std: 2.3263416290283203
+  eval/epoch_eval_time: 6.507736682891846
+[DEBUG ppo/train] Starting training_epoch_with_timing (iter 1)... (includes JIT compile on first call)
+Step 26214400:
+  training/cost_policy_loss: 0.01962087070569396
+  training/cost_v_loss: 0.05494586378335953
+  training/cost_violation: -0.004943025764077902
+  training/mean_cost: 0.020056974608451128
+  training/reward_policy_loss: 0.011461793445050716
+Step 27262976:
+  training/cost_policy_loss: 0.011878637538757175
+  training/cost_v_loss: 0.06082563940435648
+  training/cost_violation: -0.0023303376510739326
+  training/mean_cost: 0.022669663187116385
+  training/reward_policy_loss: 0.01784571912139654
+  episodic/cost: 22.38190460205078
+  episodic/ctrl_cost: 0.6144291162490845
+  episodic/reward: 26.18408203125
+  episodic/sum_reward: 26.18408203125
+Step 28311552:
+  training/cost_policy_loss: 0.019336113706231117
+  training/cost_v_loss: 0.05687911808490753
+  training/cost_violation: -0.004162587691098452
+  training/mean_cost: 0.020837413612753153
+  training/reward_policy_loss: 0.011909840162843466
+Step 29360128:
+  training/cost_policy_loss: 0.013108775252476335
+  training/cost_v_loss: 0.06123019941151142
+  training/cost_violation: -0.0026401886716485023
+  training/mean_cost: 0.022359812166541815
+  training/reward_policy_loss: 0.01993304817005992
+  episodic/cost: 21.890148162841797
+  episodic/ctrl_cost: 0.6176552772521973
+  episodic/reward: 26.71044921875
+  episodic/sum_reward: 26.71044921875
+Step 30408704:
+  training/cost_policy_loss: 0.01923811435699463
+  training/cost_v_loss: 0.05793802998960018
+  training/cost_violation: -0.004553128033876419
+  training/mean_cost: 0.020446873735636473
+  training/reward_policy_loss: 0.011315565556287766
+Step 31457280:
+  training/cost_policy_loss: 0.013136760448105633
+  training/cost_v_loss: 0.05145414127036929
+  training/cost_violation: -0.006335613550618291
+  training/mean_cost: 0.018664386589080095
+  training/reward_policy_loss: 0.019951147492974997
+  episodic/cost: 20.239892959594727
+  episodic/ctrl_cost: 0.6047322750091553
+  episodic/reward: 27.08447265625
+  episodic/sum_reward: 27.08447265625
+Step 32505856:
+  training/cost_policy_loss: 0.020248906686902046
+  training/cost_v_loss: 0.05943598225712776
+  training/cost_violation: -0.003707386553287506
+  training/mean_cost: 0.02129261428490281
+  training/reward_policy_loss: 0.010661853477358818
+Step 33554432:
+  training/cost_policy_loss: 0.013986717560328543
+  training/cost_v_loss: 0.05284987110644579
+  training/cost_violation: -0.005677138455212116
+  training/mean_cost: 0.019322861917316914
+  training/reward_policy_loss: 0.021193907829001546
+  episodic/cost: 20.273700714111328
+  episodic/ctrl_cost: 0.6155579686164856
+  episodic/reward: 27.06103515625
+  episodic/sum_reward: 27.06103515625
+Step 34603008:
+  training/cost_policy_loss: 0.02199530741199851
+  training/cost_v_loss: 0.06193371955305338
+  training/cost_violation: -0.002323770895600319
+  training/mean_cost: 0.022676228545606136
+  training/reward_policy_loss: 0.011915759881958365
+Step 35651584:
+  training/cost_policy_loss: 0.014355661696754396
+  training/cost_v_loss: 0.05064724199473858
+  training/cost_violation: -0.005649689119309187
+  training/mean_cost: 0.019350311951711774
+  training/reward_policy_loss: 0.021452883956953883
+  episodic/cost: 21.222557067871094
+  episodic/ctrl_cost: 0.6394264698028564
+  episodic/reward: 27.46728515625
+  episodic/sum_reward: 27.46728515625
+Step 36700160:
+  training/cost_policy_loss: 0.0175371136283502
+  training/cost_v_loss: 0.06107114348560572
+  training/cost_violation: -0.0016151671297848225
+  training/mean_cost: 0.023384832311421633
+  training/reward_policy_loss: 0.01708270818926394
+Step 37748736:
+  training/cost_policy_loss: 0.016070432495325804
+  training/cost_v_loss: 0.03869439521804452
+  training/cost_violation: -0.00894921226426959
+  training/mean_cost: 0.016050787875428796
+  training/reward_policy_loss: 0.016054935986176133
+  episodic/cost: 19.336658477783203
+  episodic/ctrl_cost: 0.6333968639373779
+  episodic/reward: 27.50537109375
+  episodic/sum_reward: 27.50537109375
+Step 38797312:
+  training/cost_policy_loss: 0.01719459763262421
+  training/cost_v_loss: 0.06781265046447515
+  training/cost_violation: 0.0005653412081301212
+  training/mean_cost: 0.025565342511981726
+  training/reward_policy_loss: 0.01633510342799127
+Step 39845888:
+  training/cost_policy_loss: 0.015390227548778057
+  training/cost_v_loss: 0.04488676320761442
+  training/cost_violation: -0.007788511458784342
+  training/mean_cost: 0.01721148774959147
+  training/reward_policy_loss: 0.014684937661513686
+  episodic/cost: 21.44550132751465
+  episodic/ctrl_cost: 0.6333622932434082
+  episodic/reward: 28.193359375
+  episodic/sum_reward: 28.193359375
+Step 40894464:
+  training/cost_policy_loss: 0.020974698942154646
+  training/cost_v_loss: 0.06590969674289227
+  training/cost_violation: -0.0014564539305865765
+  training/mean_cost: 0.023543546441942453
+  training/reward_policy_loss: 0.01160571351647377
+Step 41943040:
+  training/cost_policy_loss: 0.01252236554864794
+  training/cost_v_loss: 0.0499971779063344
+  training/cost_violation: -0.006898228079080582
+  training/mean_cost: 0.018101772526279092
+  training/reward_policy_loss: 0.021725440165027976
+  episodic/cost: 21.392839431762695
+  episodic/ctrl_cost: 0.638236403465271
+  episodic/reward: 28.72021484375
+  episodic/sum_reward: 28.72021484375
+Step 42991616:
+  training/cost_policy_loss: 0.02126825973391533
+  training/cost_v_loss: 0.0629538968205452
+  training/cost_violation: -0.004434775561094284
+  training/mean_cost: 0.02056522434577346
+  training/reward_policy_loss: 0.01292200735770166
+Step 44040192:
+  training/cost_policy_loss: 0.013330103131011128
+  training/cost_v_loss: 0.0686516473069787
+  training/cost_violation: -0.0015868986956775188
+  training/mean_cost: 0.02341310167685151
+  training/reward_policy_loss: 0.022495999466627836
+  episodic/cost: 19.486312866210938
+  episodic/ctrl_cost: 0.6628753542900085
+  episodic/reward: 28.919921875
+  episodic/sum_reward: 28.919921875
+Step 45088768:
+  training/cost_policy_loss: 0.021152281668037176
+  training/cost_v_loss: 0.06235249526798725
+  training/cost_violation: -0.002925761044025421
+  training/mean_cost: 0.022074238397181034
+  training/reward_policy_loss: 0.011754897888749838
+  episodic/cost: 22.63038444519043
+  episodic/ctrl_cost: 0.6739542484283447
+  episodic/reward: 29.63671875
+  episodic/sum_reward: 29.63671875
+Step 46137344:
+  training/cost_policy_loss: 0.012303652067203075
+  training/cost_v_loss: 0.05391143728047609
+  training/cost_violation: -0.005958943860605359
+  training/mean_cost: 0.019041056279093027
+  training/reward_policy_loss: 0.020715195452794433
+Step 47185920:
+  training/cost_policy_loss: 0.02327086217701435
+  training/cost_v_loss: 0.05933494679629803
+  training/cost_violation: -0.0024650217965245247
+  training/mean_cost: 0.022534978576004505
+  training/reward_policy_loss: 0.012829997576773167
+  episodic/cost: 20.742305755615234
+  episodic/ctrl_cost: 0.6957643628120422
+  episodic/reward: 29.88916015625
+  episodic/sum_reward: 29.88916015625
+Step 48234496:
+  training/cost_policy_loss: 0.014229415450245142
+  training/cost_v_loss: 0.05035618133842945
+  training/cost_violation: -0.005662577226758003
+  training/mean_cost: 0.019337423145771027
+  training/reward_policy_loss: 0.02309786807745695
+Step 49283072:
+  training/cost_policy_loss: 0.020828505512326956
+  training/cost_v_loss: 0.05517179053276777
+  training/cost_violation: -0.0028026956133544445
+  training/mean_cost: 0.022197304759174585
+  training/reward_policy_loss: 0.01038201549090445
+  episodic/cost: 20.35321807861328
+  episodic/ctrl_cost: 0.7104697227478027
+  episodic/reward: 29.87158203125
+  episodic/sum_reward: 29.87158203125
+Step 50331648:
+  training/cost_policy_loss: 0.018829095643013716
+  training/cost_v_loss: 0.05795134976506233
+  training/cost_violation: -0.002515220083296299
+  training/mean_cost: 0.022484779823571444
+  training/reward_policy_loss: 0.01749053387902677
+[DEBUG ppo/train] training_epoch_with_timing completed in 473.2s (iter 1)
+wandb: WARNING `fps` argument does not affect the frame rate of the video when providing a file path or raw bytes.
+wandb: WARNING `fps` argument does not affect the frame rate of the video when providing a file path or raw bytes.
+Step 50331648:
+  training/cost_policy_loss: 0.01697269082069397
+  training/cost_v_loss: 0.057270295917987823
+  training/cost_violation: -0.003900442272424698
+  training/mean_cost: 0.021099558100104332
+  training/reward_policy_loss: 0.01628509908914566
+[periodic vision video] step 50331648: saved videos/safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143_step50331648_fixedfar.mp4
+[periodic vision video] step 50331648: saved videos/safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143_step50331648_vision.mp4
+Step 50331648:
+  training/cost_policy_loss: 0.01697269082069397
+  training/cost_v_loss: 0.057270295917987823
+  training/cost_violation: -0.003900442272424698
+  training/mean_cost: 0.021099558100104332
+  training/reward_policy_loss: 0.01628509908914566
+  eval/episode_cost: 20.13776969909668
+  eval/episode_ctrl_cost: 0.7201765179634094
+  eval/episode_reward: 29.078125
+  eval/episode_cost_std: 8.717385292053223
+  eval/episode_ctrl_cost_std: 0.01613684929907322
+  eval/episode_reward_std: 2.5329372882843018
+  eval/epoch_eval_time: 6.617364883422852
+[DEBUG ppo/train] Starting training_epoch_with_timing (iter 2)... (includes JIT compile on first call)
+Step 51380224:
+  training/cost_policy_loss: 0.013185820425860584
+  training/cost_v_loss: 0.0480258516035974
+  training/cost_violation: -0.00471384497359395
+  training/mean_cost: 0.02028615726158023
+  training/reward_policy_loss: 0.021095891017466784
+  episodic/cost: 20.89836883544922
+  episodic/ctrl_cost: 0.7201292514801025
+  episodic/reward: 29.90625
+  episodic/sum_reward: 29.90625
+Step 52428800:
+  training/cost_policy_loss: 0.01805044908542186
+  training/cost_v_loss: 0.05635970737785101
+  training/cost_violation: -0.0019971951842308044
+  training/mean_cost: 0.023002804722636938
+  training/reward_policy_loss: 0.016224970808252692
+Step 53477376:
+  training/cost_policy_loss: 0.0171013429062441
+  training/cost_v_loss: 0.04068682994693518
+  training/cost_violation: -0.007685705786570907
+  training/mean_cost: 0.01731429435312748
+  training/reward_policy_loss: 0.017076098127290606
+  episodic/cost: 20.212543487548828
+  episodic/ctrl_cost: 0.7258529663085938
+  episodic/reward: 30.5068359375
+  episodic/sum_reward: 30.5068359375
+Step 54525952:
+  training/cost_policy_loss: 0.018970337230712175
+  training/cost_v_loss: 0.05808160826563835
+  training/cost_violation: -0.0021638041362166405
+  training/mean_cost: 0.022836195770651102
+  training/reward_policy_loss: 0.018089364981278777
+Step 55574528:
+  training/cost_policy_loss: 0.018510087626054883
+  training/cost_v_loss: 0.036781489849090576
+  training/cost_violation: -0.009626709157600999
+  training/mean_cost: 0.0153732905164361
+  training/reward_policy_loss: 0.01862463797442615
+  episodic/cost: 19.256553649902344
+  episodic/ctrl_cost: 0.7291129231452942
+  episodic/reward: 30.7265625
+  episodic/sum_reward: 30.7265625
+Step 56623104:
+  training/cost_policy_loss: 0.023004488553851843
+  training/cost_v_loss: 0.05634993780404329
+  training/cost_violation: -0.0027877874672412872
+  training/mean_cost: 0.022212212439626455
+  training/reward_policy_loss: 0.014840889489278197
+Step 57671680:
+  training/cost_policy_loss: 0.011882006423547864
+  training/cost_v_loss: 0.053847575560212135
+  training/cost_violation: -0.0034283879213035107
+  training/mean_cost: 0.021571612916886806
+  training/reward_policy_loss: 0.01910729077644646
+  episodic/cost: 22.073272705078125
+  episodic/ctrl_cost: 0.7494697570800781
+  episodic/reward: 31.365234375
+  episodic/sum_reward: 31.365234375
+Step 58720256:
+  training/cost_policy_loss: 0.020097970962524414
+  training/cost_v_loss: 0.057390288449823856
+  training/cost_violation: -0.0019116862677037716
+  training/mean_cost: 0.02308831363916397
+  training/reward_policy_loss: 0.009409846039488912
+Step 59768832:
+  training/cost_policy_loss: 0.012575276661664248
+  training/cost_v_loss: 0.04679817100986838
+  training/cost_violation: -0.005787646863609552
+  training/mean_cost: 0.01921235420741141
+  training/reward_policy_loss: 0.020643236814066768
+  episodic/cost: 21.553544998168945
+  episodic/ctrl_cost: 0.7551727294921875
+  episodic/reward: 31.52587890625
+  episodic/sum_reward: 31.52587890625
+Step 60817408:
+  training/cost_policy_loss: 0.020435170736163855
+  training/cost_v_loss: 0.04920003190636635
+  training/cost_violation: -0.005111885257065296
+  training/mean_cost: 0.019888115115463734
+  training/reward_policy_loss: 0.009976322064176202
+Step 61865984:
+  training/cost_policy_loss: 0.012569330807309598
+  training/cost_v_loss: 0.06478631682693958
+  training/cost_violation: -0.00037934351712465286
+  training/mean_cost: 0.024620657321065664
+  training/reward_policy_loss: 0.020003308542072773
+  episodic/cost: 21.988872528076172
+  episodic/ctrl_cost: 0.7584191560745239
+  episodic/reward: 31.9638671875
+  episodic/sum_reward: 31.9638671875
+Step 62914560:
+  training/cost_policy_loss: 0.053004410525318235
+  training/cost_v_loss: 0.2435395708307624
+  training/cost_violation: 0.04289437411352992
+  training/mean_cost: 0.06789437215775251
+  training/reward_policy_loss: 0.0651612055953592
+Step 63963136:
+  training/cost_policy_loss: 0.0028791524382540956
+  training/cost_v_loss: 0.1455963235348463
+  training/cost_violation: 0.018723261542618275
+  training/mean_cost: 0.043723261915147305
+  training/reward_policy_loss: 0.008351036696694791
+  episodic/cost: 55.47124481201172
+  episodic/ctrl_cost: 1.0099382400512695
+  episodic/reward: 14.72216796875
+  episodic/sum_reward: 14.72216796875
+Step 65011712:
+  training/cost_policy_loss: 0.01613014016766101
+  training/cost_v_loss: 0.04878839151933789
+  training/cost_violation: -0.010251713916659355
+  training/mean_cost: 0.014748285757377744
+  training/reward_policy_loss: 0.0018039850983768702
+Step 66060288:
+  training/cost_policy_loss: 0.005097812449093908
+  training/cost_v_loss: 0.12379845790565014
+  training/cost_violation: 0.007549850270152092
+  training/mean_cost: 0.032549851574003696
+  training/reward_policy_loss: 0.019414140027947724
+  episodic/cost: 24.2792911529541
+  episodic/ctrl_cost: 1.0930261611938477
+  episodic/reward: 5.9150390625
+  episodic/sum_reward: 5.9150390625
+Step 67108864:
+  training/cost_policy_loss: 0.026702774688601494
+  training/cost_v_loss: 0.06851407093927264
+  training/cost_violation: -0.004716378403827548
+  training/mean_cost: 0.020283621037378907
+  training/reward_policy_loss: -0.0014692778058815747
+Step 68157440:
+  training/cost_policy_loss: 0.001727210357785225
+  training/cost_v_loss: 0.08847904670983553
+  training/cost_violation: 0.004521624650806189
+  training/mean_cost: 0.029521623859182
+  training/reward_policy_loss: 0.018659780966117978
+  episodic/cost: 26.68415069580078
+  episodic/ctrl_cost: 0.9279685020446777
+  episodic/reward: 14.81298828125
+  episodic/sum_reward: 14.81298828125
+Step 69206016:
+  training/cost_policy_loss: 0.01799076981842518
+  training/cost_v_loss: 0.056138623505830765
+  training/cost_violation: -0.005243280902504921
+  training/mean_cost: 0.019756719237193465
+  training/reward_policy_loss: 0.0031383148016175255
+Step 70254592:
+  training/cost_policy_loss: 0.009459451219299808
+  training/cost_v_loss: 0.06512950640171766
+  training/cost_violation: -0.000895713921636343
+  training/mean_cost: 0.024104284355416894
+  training/reward_policy_loss: 0.015214708633720875
+  episodic/cost: 21.484262466430664
+  episodic/ctrl_cost: 0.8241986036300659
+  episodic/reward: 25.76123046875
+  episodic/sum_reward: 25.76123046875
+Step 71303168:
+  training/cost_policy_loss: 0.017243997659534216
+  training/cost_v_loss: 0.05788444820791483
+  training/cost_violation: -0.003278785850852728
+  training/mean_cost: 0.021721214056015015
+  training/reward_policy_loss: 0.006110501009970903
+Step 72351744:
+  training/cost_policy_loss: 0.009268307243473828
+  training/cost_v_loss: 0.04736551782116294
+  training/cost_violation: -0.005359263624995947
+  training/mean_cost: 0.019640735117718577
+  training/reward_policy_loss: 0.015374300419352949
+  episodic/cost: 20.886890411376953
+  episodic/ctrl_cost: 0.7866297960281372
+  episodic/reward: 30.35400390625
+  episodic/sum_reward: 30.35400390625
+Step 73400320:
+  training/cost_policy_loss: 0.014260195835959166
+  training/cost_v_loss: 0.058431318029761314
+  training/cost_violation: -0.0015391665510833263
+  training/mean_cost: 0.02346083428710699
+  training/reward_policy_loss: 0.012079976382665336
+Step 74448896:
+  training/cost_policy_loss: 0.013620339275803417
+  training/cost_v_loss: 0.0401578932069242
+  training/cost_violation: -0.008636292768642306
+  training/mean_cost: 0.016363707603886724
+  training/reward_policy_loss: 0.01238227158319205
+  episodic/cost: 19.629899978637695
+  episodic/ctrl_cost: 0.7788757085800171
+  episodic/reward: 31.32958984375
+  episodic/sum_reward: 31.32958984375
+Step 75497472:
+  training/cost_policy_loss: 0.015423306147567928
+  training/cost_v_loss: 0.06171730812638998
+  training/cost_violation: -0.00012334436178207397
+  training/mean_cost: 0.024876654148101807
+  training/reward_policy_loss: 0.013565934961661696
+[DEBUG ppo/train] training_epoch_with_timing completed in 489.1s (iter 2)
+wandb: WARNING `fps` argument does not affect the frame rate of the video when providing a file path or raw bytes.
+wandb: WARNING `fps` argument does not affect the frame rate of the video when providing a file path or raw bytes.
+Step 75497472:
+  training/cost_policy_loss: 0.016223900020122528
+  training/cost_v_loss: 0.06947873532772064
+  training/cost_violation: -0.0005890754982829094
+  training/mean_cost: 0.024410925805568695
+  training/reward_policy_loss: 0.015568073838949203
+[periodic vision video] step 75497472: saved videos/safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143_step75497472_fixedfar.mp4
+[periodic vision video] step 75497472: saved videos/safe_goal_point_Level_1_crpo_seed0_20261013_202146_752143_step75497472_vision.mp4
+Step 75497472:
+  training/cost_policy_loss: 0.016223900020122528
+  training/cost_v_loss: 0.06947873532772064
+  training/cost_violation: -0.0005890754982829094
+  training/mean_cost: 0.024410925805568695
+  training/reward_policy_loss: 0.015568073838949203
+  eval/episode_cost: 19.560768127441406
+  eval/episode_ctrl_cost: 0.7705483436584473
+  eval/episode_reward: 30.5390625
+  eval/episode_cost_std: 8.178442001342773
+  eval/episode_ctrl_cost_std: 0.02059316821396351
+  eval/episode_reward_std: 2.4491782188415527
+  eval/epoch_eval_time: 6.7064759731292725
+[DEBUG ppo/train] Starting training_epoch_with_timing (iter 3)... (includes JIT compile on first call)
+[2026-10-13T20:51:25.016] error: *** JOB 28042980 ON gcn43 CANCELLED AT 2026-10-13T20:51:25 DUE TO TIME LIMIT ***
