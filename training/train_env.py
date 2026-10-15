@@ -345,7 +345,16 @@ def main():
             if final_log_data:
                 wandb.log(final_log_data, step=int(config.num_timesteps))
 
-        if not config.skip_rollout:
+        if config.vision and not config.skip_rollout:
+            # collect_rollout_metrics builds a bare state-obs env and drives a
+            # single unbatched env (indexing agent_pos[0], saving state
+            # trajectories, plotting x/y positions). None of that fits a
+            # pixel-wrapped policy, which needs a batched GpuPixelObservationWrapper
+            # env producing pixels/* dict observations. Vision runs get their
+            # rollout/visualisation through video_fn instead.
+            print("\nSkipping state rollout evaluation in vision mode "
+                  "(handled by the periodic vision video).")
+        elif not config.skip_rollout:
             print(f"\nPerforming rollout evaluation...")
             rollout_metrics = collect_rollout_metrics(
                 env_name=env_name,
