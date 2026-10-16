@@ -164,6 +164,10 @@ class CNN(linen.Module):
 
 VISION_LATENT_KEY = "_vision_latent"
 
+# NatureCNN filter counts. The last entry is the channel count `C` of the
+# feature maps, which per-channel FiLM needs to recover from the flat latent.
+_NATURE_CNN_NUM_FILTERS = (32, 64, 64)
+
 
 def _pixel_batch_shape(data: dict, state_obs_key: str = "") -> Tuple[int, ...]:
     """Leading (batch) dims of an observation dict, ignoring feature axes.
@@ -248,7 +252,7 @@ class VisionEncoder(linen.Module):
 
         natureCNN = functools.partial(
             CNN,
-            num_filters=[32, 64, 64],
+            num_filters=list(_NATURE_CNN_NUM_FILTERS),
             kernel_sizes=[(8, 8), (4, 4), (3, 3)],
             strides=[(4, 4), (2, 2), (1, 1)],
             activation=linen.relu,
@@ -259,6 +263,63 @@ class VisionEncoder(linen.Module):
             jnp.reshape(cnn_out, cnn_out.shape[:-3] + (-1,)) for cnn_out in cnn_outs
         ]
         return jnp.concatenate(flat_outs, axis=-1)
+
+
+class FiLM(linen.Module):
+    """Per-channel Feature-wise Linear Modulation (Perez et al., AAAI 2018).
+
+    Maps the conditioning vector `cond` through a two-layer MLP to a per-channel
+    scale `gamma` and shift `beta` (each of width `channels`), then applies
+    `(1 + gamma) * feature_maps + beta`. `feature_maps` is `(..., spatial,
+    channels)`; the same gamma/beta is broadcast across all `spatial` positions,
+    so modulation is per channel rather than per spatial cell. Centring gamma at
+    1 makes the layer an identity map at initialisation.
+    """
+
+    channels: int
+    activation: ActivationFn = linen.relu
+    kernel_init: Initializer = jax.nn.initializers.lecun_uniform()
+
+    @linen.compact
+    def __call__(
+        self, feature_maps: jnp.ndarray, cond: jnp.ndarray
+    ) -> jnp.ndarray:
+        hidden = self.activation(
+            linen.Dense(
+                self.channels, kernel_init=self.kernel_init, name="film_hidden"
+            )(cond)
+        )
+        film_params = linen.Dense(
+            2 * self.channels, kernel_init=self.kernel_init, name="film_generator"
+        )(hidden)
+        gamma, beta = jnp.split(film_params, 2, axis=-1)
+        gamma = jnp.expand_dims(gamma, axis=-2)
+        beta = jnp.expand_dims(beta, axis=-2)
+        return (1.0 + gamma) * feature_maps + beta
+
+
+def _film_fuse(
+    module: linen.Module, latent: jnp.ndarray, cond: jnp.ndarray
+) -> jnp.ndarray:
+    """Per-channel FiLM over a flattened VisionEncoder latent.
+
+    The latent is `concat` over cameras of each camera's `(H, W, C)` map
+    flattened channel-last, so reshaping to `(..., spatial, C)` recovers the
+    channel axis (`C` is shared across cameras). FiLM modulates per channel and
+    the result is flattened back to the original shape. A zero-width latent
+    (no cameras) has nothing to modulate and is returned unchanged.
+    """
+    channels = _NATURE_CNN_NUM_FILTERS[-1]
+    width = latent.shape[-1]
+    if width == 0:
+        return latent
+    assert width % channels == 0, (
+        f"vision latent width {width} is not a multiple of the CNN channel "
+        f"count {channels}; cannot recover feature maps for FiLM."
+    )
+    maps = latent.reshape(latent.shape[:-1] + (width // channels, channels))
+    maps = FiLM(channels=channels, activation=module.activation)(maps, cond)
+    return maps.reshape(latent.shape)
 
 
 def _state_features(module: linen.Module, data: dict) -> jnp.ndarray:
@@ -329,8 +390,7 @@ class VisionMLP(linen.Module):
                 state = linen.Dense(latent.shape[-1], name="state_proj")(state)
                 latent = latent + state
             else:
-                # TODO: FiLM
-                pass
+                latent = _film_fuse(self, latent, _state_features(self, data))
 
         return MLP(
             layer_sizes=self.layer_sizes,
@@ -376,8 +436,7 @@ class VisionMLPHead(linen.Module):
                 state = linen.Dense(hidden.shape[-1], name="state_proj")(state)
                 hidden = hidden + state
             else:
-                # TODO: FiLM
-                pass
+                hidden = _film_fuse(self, hidden, _state_features(self, data))
         return MLP(
             layer_sizes=self.layer_sizes,
             activation=self.activation,
@@ -695,8 +754,7 @@ class VisionQMLP(linen.Module):
                 state = linen.Dense(latent.shape[-1], name="state_proj")(state)
                 latent = latent + state
             else:
-                # TODO: FiLM
-                pass
+                latent = _film_fuse(self, latent, data[self.state_obs_key])
         hidden = jnp.concatenate([latent, actions], axis=-1)
         res = []
         for _ in range(self.n_critics):
@@ -831,22 +889,16 @@ def _make_vision_head_network(
 
   def apply(processor_params, head_params, obs):
     if state_obs_key:
-        dummy_obs[state_obs_key] = jnp.zeros(
-            (1,) + tuple(observation_size[state_obs_key])
+        state_obs = preprocess_observations_fn(
+            obs[state_obs_key], normalizer_select(processor_params, state_obs_key)
         )
+        obs = {**obs, state_obs_key: state_obs}
+    out = head_module.apply(head_params, obs)
+    return jnp.squeeze(out, axis=-1) if squeeze_output else out
 
-    def apply(processor_params, head_params, obs):
-        if state_obs_key:
-            state_obs = preprocess_observations_fn(
-                obs[state_obs_key], normalizer_select(processor_params, state_obs_key)
-            )
-            obs = {**obs, state_obs_key: state_obs}
-        out = head_module.apply(head_params, obs)
-        return jnp.squeeze(out, axis=-1) if squeeze_output else out
-
-    return FeedForwardNetwork(
-        init=lambda key: head_module.init(key, dummy_obs), apply=apply
-    )
+  return FeedForwardNetwork(
+      init=lambda key: head_module.init(key, dummy_obs), apply=apply
+  )
 
 
 def make_policy_head_network_vision(
