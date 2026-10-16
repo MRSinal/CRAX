@@ -65,6 +65,11 @@ TRANSLATIONS = {
     "safe_velocity_walker2d": "Walker Velocity",
     # Observation modalities
     "vector": "Vector",
+    # Early-fusion modes (vision_comparison study)
+    "pixel": "Pixels",
+    "concat": "Concat",
+    "sum": "Sum",
+    "film": "FiLM",
     "vision_vision": "Pixels (Egocentric)",
     "vision_allocentric": "Pixels (Allocentric)",
     "vision_fixedfar": "Pixels (Fixed Far)",
@@ -179,6 +184,53 @@ def obs_mode_dir(obs_mode: str, env_name: Optional[str] = None) -> str:
         camera = allocentric_camera(env_name) if env_name else DEFAULT_ALLOCENTRIC_CAMERA
         return f"vision_{camera}"
     return obs_mode
+
+# Early-fusion modes for the vision/proprioception fusion study.
+# These separate runs by HOW the CNN latent and the state vector are combined,
+# which the camera-based `obs_mode_segment` above does not capture:
+#   vector  -> state-only baseline      (config.vision not set)
+#   pixel   -> pixels only, no state    (config.vision, vision_obs_mode == "pixels")
+#   concat  -> pixels+state, concat     (vision_obs_mode == "pixels+state", vision_early_fusion == "concat")
+#   sum     -> pixels+state, sum        (... vision_early_fusion == "sum")
+#   film    -> pixels+state, FiLM       (... vision_early_fusion == "film")
+FUSION_MODES: List[str] = ["vector", "pixel", "concat", "sum", "film"]
+FUSION_MODE_COLORS: Dict[str, str] = {
+    "vector": "#2F2F2F",  # neutral grey, matches OBS_MODE_COLORS["vector"]
+    "pixel": "#D55E00",   # orange
+    "concat": "#0072B2",  # blue
+    "sum": "#009E73",     # green
+    "film": "#CC79A7",    # magenta
+}
+
+
+def fusion_mode_of_config(config: dict) -> Optional[str]:
+    """Classify a wandb run config into a FUSION_MODES entry, or None if it fits none.
+
+    Mirrors the training flags: a vector run has no `vision`; a pixels-only vision
+    run is `pixel`; a pixels+state run is named by its `vision_early_fusion`.
+    """
+    if not config.get("vision"):
+        return "vector"
+    obs_mode = config.get("vision_obs_mode", "pixels")
+    if obs_mode == "pixels":
+        return "pixel"
+    if obs_mode == "pixels+state":
+        fusion = config.get("vision_early_fusion", "concat")
+        return fusion if fusion in FUSION_MODES else None
+    return None
+
+
+def fusion_mode_dir(mode: str) -> str:
+    """Sub-directory a fusion mode's per-seed parquets live in.
+
+    The `vector` baseline keeps the flat `<algo>/seed_<n>.parquet` layout it shares
+    with the main results; every pixel-based fusion mode sits under `fusion_<mode>/`
+    so the modes never collide (they all have the same env/level/algo/camera).
+    """
+    if mode == "vector":
+        return ""
+    return f"fusion_{mode}"
+
 
 # Environments were renamed mid-project. Will be removed in the future
 WANDB_ENV_NAME_ALIASES: Dict[str, List[str]] = {

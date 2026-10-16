@@ -464,11 +464,12 @@ def add_shared_training_args(
     parser.add_argument(
         "--vision_early_fusion",
         type=str,
-        choices=["concat", "sum"],
+        choices=["concat", "sum", "film"],
         default="concat",
         help="How the CNN latent and the 'state' vector are fused before the MLP heads "
         "when --vision_obs_mode pixels+state: 'concat' (channel-wise concatenation, "
-        "default) or 'sum'. No effect in pixels-only mode (no state vector to fuse).",
+        "default), 'sum', or 'film' (per-channel FiLM modulation of the CNN latent by "
+        "the state vector). No effect in pixels-only mode (no state vector to fuse).",
     )
     parser.add_argument(
         "--vision_independent_encoders",
