@@ -131,7 +131,8 @@ class SafePush(PipelineEnv, ABC):
         include_goal_lidar: bool = True,
         include_goal_comp: bool = True,
         include_hazard_comp: bool = True,
-        enable_gap: bool = False,
+        # Privileged block/goal compasses and distances
+        include_block_obs: bool = True,
         # Debug
         debug: bool = False,
         **kwargs,
@@ -144,9 +145,7 @@ class SafePush(PipelineEnv, ABC):
         self._include_goal_lidar = include_goal_lidar
         self._include_goal_comp = include_goal_comp
         self._include_hazard_comp = include_hazard_comp
-
-        # GAP
-        self.enable_gap = enable_gap
+        self._include_block_obs = include_block_obs
 
         # Use defaults from abstract properties if not provided
         if healthy_z_range is None:
@@ -1405,22 +1404,11 @@ class SafePush(PipelineEnv, ABC):
             hazard_compasses_flat = hazard_compasses.reshape((-1,))  # (2k,)
 
         # Build observation with separate goal and hazard lidars plus individual hazard compasses
-        # Added: block observations for push task
-        # TODO: Add gap flag to turn off and on
         obs_parts = [
             accelerometer,  # (3,)
             velocimeter,  # (3,)
             gyro,  # (3,)
             magnetometer,  # (3,)
-            # Block observations (new for push task)
-            agent_to_block_comp,  # (2,) - Compass from agent to block
-            block_to_goal_comp,  # (2,) - Compass from block to goal
-            jp.array(
-                [agent_to_block_dist]
-            ),  # (1,) - Distance from agent to block (normalized)
-            jp.array(
-                [block_to_goal_dist]
-            ),  # (1,) - Distance from block to goal (normalized)
         ]
         if self._include_hazard_lidar:
             obs_parts.append(hazard_lidar_obs)  # (16,) - Hazard Lidar
@@ -1432,8 +1420,9 @@ class SafePush(PipelineEnv, ABC):
             obs_parts.append(
                 hazard_compasses_flat
             )  # (16,) - Individual hazard compasses (8 hazards * 2 each)
-        if self.enable_gap:
-            obs_parts.append(
+        if self._include_block_obs:
+            # Block observations (privileged block/goal state for the push task)
+            obs_parts.extend(
                 [
                     agent_to_block_comp,  # (2,) - Compass from agent to block
                     block_to_goal_comp,  # (2,) - Compass from block to goal
@@ -1481,12 +1470,8 @@ class SafePush(PipelineEnv, ABC):
             * (self._include_goal_lidar + self._include_hazard_lidar)
             + 2 * self._include_goal_comp
             + self._hazard_compass_k * 2 * self._include_hazard_comp
-            +
-            # Block observations (new for push task)
-            2  # Agent-to-block compass
-            + 2  # Block-to-goal compass
-            + 1  # Agent-to-block distance
-            + 1  # Block-to-goal distance
+            # Block observations: 2 + 2 compasses, 1 + 1 distances
+            + 6 * self._include_block_obs
         )
 
 

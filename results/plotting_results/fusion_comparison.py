@@ -39,7 +39,6 @@ from results.common import (
     results_path,
     set_mpl_style,
 )
-
 # (env, level, mode, metric) -> one DataFrame['_step', 'value'] per seed
 RunStore = Dict[Tuple[str, int, str, str], List[pd.DataFrame]]
 
@@ -175,6 +174,273 @@ def plot_env(store: RunStore, args: argparse.Namespace, env: str) -> Optional[Pa
     return out_path
 
 
+def build_stats(store: RunStore, args: argparse.Namespace) -> pd.DataFrame:
+    """Final mean/CI per (env, level, mode, metric), keyed as 'algo' for reuse.
+
+    The win/safety helpers from `alg_comp_bars` read an 'algo' column; we put the
+    fusion mode there so a mode plays the role an algorithm does in that table.
+    """
+    rows = []
+    for env in args.envs:
+        for level in args.levels:
+            for mode in args.fusion_modes:
+                for metric in args.metrics:
+                    stat = _final_value(store.get((env, level, mode, metric), []), args.last_k)
+                    if stat is None:
+                        continue
+                    mean, ci = stat
+                    rows.append(dict(env=env, level=level, algo=mode, metric=metric,
+                                     mean=mean, ci=ci))
+    return pd.DataFrame(rows)
+
+
+Lookup = Dict[Tuple[str, int, str, str], Tuple[float, float]]
+
+
+def _build_lookup(stats: pd.DataFrame) -> Lookup:
+    """(env, level, mode, metric) -> (mean, ci)."""
+    return {(r["env"], r["level"], r["algo"], r["metric"]): (r["mean"], r["ci"])
+            for _, r in stats.iterrows()}
+
+
+def _is_safe(lookup: Lookup, env: str, level: int, mode: str, threshold: float) -> bool:
+    """Safe if the mean cost is below the threshold."""
+    key = (env, level, mode, "cost")
+    return key in lookup and lookup[key][0] < threshold
+
+
+def _best_mode(lookup: Lookup, envs: List[str], levels: List[int], modes: List[str],
+               threshold: Optional[float] = None) -> Dict[Tuple[str, int], Optional[str]]:
+    """Highest-reward mode per (env, level); restricted to safe modes if `threshold` is set."""
+    best: Dict[Tuple[str, int], Optional[str]] = {}
+    for env in envs:
+        for level in levels:
+            cands = [m for m in modes if (env, level, m, "reward") in lookup
+                     and (threshold is None or _is_safe(lookup, env, level, m, threshold))]
+            best[(env, level)] = max(cands, key=lambda m: lookup[(env, level, m, "reward")][0],
+                                     default=None)
+    return best
+
+
+def generate_fusion_summary_table(stats: pd.DataFrame, envs: List[str], levels: List[int],
+                                  modes: List[str], safety_threshold: float) -> str:
+    """Wins / Safe% per fusion mode, levels across the columns plus a Total.
+
+    Mirrors `alg_comp_bars.generate_latex_summary_table` but rows are fusion modes:
+      - Wins: envs where the mode had the highest reward while safe
+      - Safe%: percentage of envs where the mode was safe
+    """
+    lookup = _build_lookup(stats)
+    best_mode = _best_mode(lookup, envs, levels, modes, safety_threshold)
+
+    summary = {}
+    for mode in modes:
+        for level in levels:
+            wins = safe_count = total = 0
+            for env in envs:
+                if (env, level, mode, "cost") not in lookup:
+                    continue
+                total += 1
+                if _is_safe(lookup, env, level, mode, safety_threshold):
+                    safe_count += 1
+                if best_mode.get((env, level)) == mode:
+                    wins += 1
+            safe_pct = (safe_count / total * 100) if total else 0
+            summary[(mode, level)] = (wins, safe_pct)
+
+    totals = {}
+    for mode in modes:
+        tw = 0
+        pcts = []
+        for level in levels:
+            w, p = summary.get((mode, level), (0, 0))
+            tw += w
+            pcts.append(p)
+        totals[mode] = (tw, sum(pcts) / len(pcts) if pcts else 0)
+
+    max_wins = {level: max((summary.get((m, level), (0, 0))[0] for m in modes), default=0)
+                for level in levels}
+    max_total = max((totals[m][0] for m in modes), default=0)
+
+    n_cols = (len(levels) + 1) * 2
+    lines = [
+        "% Auto-generated LaTeX fusion summary table",
+        "% Requires: \\usepackage{booktabs}, \\usepackage{xcolor}",
+        "\\definecolor{safegreen}{RGB}{34, 139, 34}",
+        "",
+        "\\begin{table*}[htbp]",
+        "\\centering",
+        f"\\begin{{tabular}}{{l{'c' * n_cols}}}",
+        "\\toprule",
+    ]
+
+    header1 = [""] + [f"\\multicolumn{{2}}{{c}}{{Level {lvl}}}" for lvl in levels]
+    header1.append("\\multicolumn{2}{c}{Total}")
+    lines.append(" & ".join(header1) + " \\\\")
+
+    cmid, col = [], 2
+    for _ in levels:
+        cmid.append(f"\\cmidrule(lr){{{col}-{col + 1}}}")
+        col += 2
+    cmid.append(f"\\cmidrule(lr){{{col}-{col + 1}}}")
+    lines.append(" ".join(cmid))
+
+    header2 = ["Fusion"]
+    for _ in range(len(levels) + 1):  # per level + Total
+        header2 += ["Wins $\\uparrow$", "Safe\\% $\\uparrow$"]
+    lines.append(" & ".join(header2) + " \\\\")
+    lines.append("\\midrule")
+
+    for mode in modes:
+        parts = [TRANSLATIONS.get(mode, mode)]
+        for level in levels:
+            wins, safe_pct = summary.get((mode, level), (0, 0))
+            w = f"\\textbf{{{wins}}}" if wins > 0 and wins == max_wins[level] else str(wins)
+            s = f"{safe_pct:.0f}"
+            if safe_pct == 100:
+                s = f"\\textcolor{{safegreen}}{{{s}}}"
+            parts += [w, s]
+        tw, avg = totals[mode]
+        tws = f"\\textbf{{{tw}}}" if tw > 0 and tw == max_total else str(tw)
+        avgs = f"{avg:.0f}"
+        if avg == 100:
+            avgs = f"\\textcolor{{safegreen}}{{{avgs}}}"
+        parts += [tws, avgs]
+        lines.append(" & ".join(parts) + " \\\\")
+
+    lines += [
+        "\\bottomrule",
+        "\\end{tabular}",
+        f"\\caption{{Early-fusion technique summary across {len(envs)} environments. "
+        f"\\textbf{{Wins}}: number of environments where the fusion mode achieved the "
+        f"highest reward while being safe. "
+        f"\\textbf{{Safe\\%}}: percentage of environments where the mode was safe "
+        f"(cost $< {safety_threshold:.0f}$). "
+        f"\\textbf{{Total}}: sum of wins and average safety percentage across levels. "
+        f"\\textcolor{{safegreen}}{{Green}} indicates 100\\% safe.}}",
+        "\\label{tab:fusion_summary}",
+        "\\end{table*}",
+    ]
+    return "\n".join(lines)
+
+
+def generate_fusion_appendix_table(stats: pd.DataFrame, envs: List[str], levels: List[int],
+                                   modes: List[str], safety_threshold: float,
+                                   envs_per_row: int = 2) -> str:
+    """Detailed per-mode reward/cost table, envs chunked across stacked sub-tables.
+
+    Mirrors `alg_comp_bars.generate_latex_table_appendix` but rows are fusion modes:
+    reward (R, higher better) and cost (C, lower better) per (env, level); safe costs
+    green, the highest reward per (env, level) bold
+    regardless of safety.
+    """
+    lookup = _build_lookup(stats)
+    best_mode = _best_mode(lookup, envs, levels, modes)
+    env_chunks = [envs[i:i + envs_per_row] for i in range(0, len(envs), envs_per_row)]
+
+    mode_col_width, data_col_width = "1.8cm", "0.85cm"
+    n_full_data_cols = envs_per_row * len(levels) * 2
+    col_spec = f"p{{{mode_col_width}}}" + f"p{{{data_col_width}}}" * n_full_data_cols
+
+    lines = [
+        "% Auto-generated LaTeX fusion table (Appendix - split across rows)",
+        "% Requires: \\usepackage{booktabs}, \\usepackage{xcolor}, \\usepackage{array}",
+        "\\definecolor{safegreen}{RGB}{34, 139, 34}",
+        "",
+        "\\begin{table*}[htbp]",
+        "\\centering",
+        "\\footnotesize",
+    ]
+
+    for chunk_idx, env_chunk in enumerate(env_chunks):
+        remaining = envs_per_row - len(env_chunk)
+        if remaining:
+            lines.append("\\noindent")
+        lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
+        lines.append("\\toprule")
+
+        # Row 1: env names
+        row = [""]
+        for env in env_chunk:
+            row.append(f"\\multicolumn{{{len(levels) * 2}}}{{c}}{{{TRANSLATIONS.get(env, env)}}}")
+        for _ in range(remaining):
+            row.append(f"\\multicolumn{{{len(levels) * 2}}}{{c}}{{}}")
+        lines.append(" & ".join(row) + " \\\\")
+
+        cmid, col = [], 2
+        for _ in env_chunk:
+            cmid.append(f"\\cmidrule(lr){{{col}-{col + len(levels) * 2 - 1}}}")
+            col += len(levels) * 2
+        lines.append(" ".join(cmid))
+
+        # Row 2: levels
+        row = [""]
+        for _ in env_chunk:
+            for level in levels:
+                row.append(f"\\multicolumn{{2}}{{c}}{{Level {level}}}")
+        for _ in range(remaining):
+            for _ in levels:
+                row.append("\\multicolumn{2}{c}{}")
+        lines.append(" & ".join(row) + " \\\\")
+
+        cmid, col = [], 2
+        for _ in env_chunk:
+            for _ in levels:
+                cmid.append(f"\\cmidrule(lr){{{col}-{col + 1}}}")
+                col += 2
+        lines.append(" ".join(cmid))
+
+        # Row 3: R / C
+        row = ["Fusion"]
+        for _ in env_chunk:
+            for _ in levels:
+                row += ["R $\\uparrow$", "C $\\downarrow$"]
+        for _ in range(remaining):
+            for _ in levels:
+                row += ["", ""]
+        lines.append(" & ".join(row) + " \\\\")
+        lines.append("\\midrule")
+
+        # Data rows
+        for mode in modes:
+            row = [TRANSLATIONS.get(mode, mode)]
+            for env in env_chunk:
+                for level in levels:
+                    rk, ck = (env, level, mode, "reward"), (env, level, mode, "cost")
+                    if rk in lookup:
+                        r = f"{lookup[rk][0]:.1f}"
+                        if best_mode.get((env, level)) == mode:
+                            r = f"\\textbf{{{r}}}"
+                    else:
+                        r = "--"
+                    if ck in lookup:
+                        c = f"{lookup[ck][0]:.1f}"
+                        if _is_safe(lookup, env, level, mode, safety_threshold):
+                            c = f"\\textcolor{{safegreen}}{{{c}}}"
+                    else:
+                        c = "--"
+                    row += [r, c]
+            for _ in range(remaining):
+                for _ in levels:
+                    row += ["", ""]
+            lines.append(" & ".join(row) + " \\\\")
+
+        lines.append("\\bottomrule")
+        lines.append("\\end{tabular}")
+        if chunk_idx < len(env_chunks) - 1:
+            lines.append("\\\\[1em]")
+
+    lines += [
+        "\\caption{Detailed early-fusion comparison across environments and difficulty levels. "
+        "R: Reward ($\\uparrow$ higher is better), C: Cost ($\\downarrow$ lower is better). "
+        f"\\textcolor{{safegreen}}{{Green}} indicates safe (cost $< {safety_threshold:.0f}$). "
+        "\\textbf{Bold} indicates the highest reward.}",
+        "\\label{tab:fusion_comparison_detailed}",
+        "\\end{table*}",
+    ]
+    return "\n".join(lines)
+
+
 def main(args: argparse.Namespace) -> None:
     store = load_all(args)
     if not any(store.values()):
@@ -184,6 +450,25 @@ def main(args: argparse.Namespace) -> None:
         )
     for env in args.envs:
         plot_env(store, args, env)
+
+    if args.latex:
+        stats = build_stats(store, args)
+        summary = generate_fusion_summary_table(
+            stats, args.envs, args.levels, args.fusion_modes, args.threshold)
+        appendix = generate_fusion_appendix_table(
+            stats, args.envs, args.levels, args.fusion_modes, args.threshold)
+        print("\n% ===== SUMMARY TABLE =====\n" + summary)
+        print("\n% ===== APPENDIX TABLE =====\n" + appendix + "\n")
+        if args.output_latex:
+            # Mirror alg_comp_bars: a base path yields <stem>_summary / <stem>_appendix.
+            base = results_path(args.output_latex)
+            base.parent.mkdir(parents=True, exist_ok=True)
+            summary_path = base.with_stem(base.stem + "_summary")
+            appendix_path = base.with_stem(base.stem + "_appendix")
+            summary_path.write_text(summary)
+            appendix_path.write_text(appendix)
+            print(f"Summary table saved to: {summary_path}")
+            print(f"Appendix table saved to: {appendix_path}")
 
 
 def build_args() -> argparse.ArgumentParser:
@@ -208,6 +493,10 @@ def build_args() -> argparse.ArgumentParser:
     p.add_argument("--last_k", type=int, default=10,
                    help="Logged points averaged to get each run's final value.")
     p.add_argument("--no_threshold", action="store_true", help="Hide safety threshold lines.")
+    p.add_argument("--latex", action="store_true",
+                   help="Also print a Wins/Safe%% summary LaTeX table (rows = fusion modes).")
+    p.add_argument("--output_latex", type=str, default=None,
+                   help="Path (relative to results/) to also write the LaTeX table to.")
     return p
 
 

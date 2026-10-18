@@ -15,4 +15,4 @@ export PYOPENGL_PLATFORM=egl
 
 uv sync --all-extras
 # Execute the script or command
-uv run python -m training.train_env --env_name safe_push_point --alg crpo --difficulty 2 --num_timesteps 300000000 --seeds 0 1 2 3 4 --vision --vision_obs_mode="pixels+state" --env_kwargs '{"include_goal_lidar": false, "include_hazard_lidar": false, "include_goal_comp": false, "include_hazard_comp": false}' --vision_layer_norm --vision_early_fusion concat --wandb_group safe_push_L2_proprio_concat --wandb_tags vision_proprio concat safe_push crpo level2
+uv run python -m training.train_env --env_name safe_push_point --alg crpo --difficulty 2 --num_timesteps 300000000 --seeds 0 1 2 3 4 --vision --vision_obs_mode="pixels+state" --env_kwargs '{"include_goal_lidar": false, "include_hazard_lidar": false, "include_goal_comp": false, "include_hazard_comp": false, "include_block_obs": false}' --vision_layer_norm --vision_early_fusion concat --wandb_group safe_push_L2_proprio_concat --wandb_tags vision_proprio concat safe_push crpo level2
