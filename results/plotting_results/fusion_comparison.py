@@ -1,6 +1,11 @@
 """Compare early-fusion techniques for combining pixels and proprioception.
 
-One figure per environment. Each figure is a grid with the metrics down the rows
+Two kinds of figure are written:
+
+  * Learning curves (`<out_name>_curves.pdf`): one row per environment, and in each
+    row a separate Reward | Cost pair per difficulty level, one line per fusion mode
+    (mean over seeds with a 95% CI band).
+  * Final-performance bars (`<out_name>_<env>.pdf`): one figure per environment. Each figure is a grid with the metrics down the rows
 (Reward on top, Cost below) and the difficulty levels across the columns, so
 Level 1 and Level 2 sit next to each other. Every panel draws one final-performance
 bar per fusion mode:
@@ -36,6 +41,7 @@ from results.common import (
     fusion_mode_dir,
     get_series,
     legend_ncol,
+    moving_average,
     results_path,
     set_mpl_style,
 )
@@ -168,6 +174,101 @@ def plot_env(store: RunStore, args: argparse.Namespace, env: str) -> Optional[Pa
     out_dir = results_path(args.output_fig_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{args.out_name}_{env}.pdf"
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved figure: {out_path}")
+    return out_path
+
+
+def plot_curves(store: RunStore, args: argparse.Namespace) -> Optional[Path]:
+    """Learning curves for every env, with Level 1 and Level 2 as separate panel pairs.
+
+    Rows are environments; each row holds one subfigure per level, titled
+    "<env> - Level <l>", containing the metrics side by side (Reward | Cost).
+    """
+    set_mpl_style()
+    envs, metrics, levels, modes = args.envs, args.metrics, args.levels, args.fusion_modes
+
+    n_rows, n_cols = len(envs), len(levels) * len(metrics)
+    fig = plt.figure(figsize=(args.panel_w * n_cols, args.panel_h * n_rows + 0.6),
+                     layout="constrained")
+    subfigs = np.atleast_2d(fig.subfigures(n_rows, len(levels), wspace=0.04, hspace=0.04))
+
+    handles: Dict[str, plt.Artist] = {}
+    drew_any = False
+
+    for env_i, env in enumerate(envs):
+        for level_i, level in enumerate(levels):
+            sub = subfigs[env_i][level_i]
+            sub.suptitle(f"{TRANSLATIONS.get(env, env)} - Level {level}")
+            axs = np.atleast_1d(sub.subplots(1, len(metrics)))
+
+            for metric_i, metric in enumerate(metrics):
+                ax = axs[metric_i]
+                non_negative = True
+
+                for mode in modes:
+                    runs = store.get((env, level, mode, metric), [])
+                    if not runs:
+                        continue
+                    steps, vals = align_and_stack(runs)
+                    if vals.size == 0:
+                        continue
+                    drew_any = True
+                    mode_non_negative = float(vals.min()) >= 0.0
+                    non_negative &= mode_non_negative
+
+                    x = steps.astype(float)
+                    mean = vals.mean(axis=0)
+                    ci = 1.96 * vals.std(axis=0) / np.sqrt(max(vals.shape[0], 1))
+                    if args.smoothing_window:
+                        mean = moving_average(mean, args.smoothing_window)
+                        ci = moving_average(ci, args.smoothing_window)
+
+                    lower = mean - ci
+                    if mode_non_negative:
+                        lower = np.maximum(lower, 0.0)
+
+                    line, = ax.plot(x, mean, color=FUSION_MODE_COLORS.get(mode))
+                    ax.fill_between(x, lower, mean + ci, alpha=0.25, color=line.get_color())
+                    handles.setdefault(mode, line)
+
+                if not ax.lines:
+                    ax.text(0.5, 0.5, "No data", ha="center", va="center",
+                            transform=ax.transAxes, color="gray")
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                if non_negative:
+                    ax.set_ylim(bottom=0.0)
+                if args.x_max is not None:
+                    ax.set_xlim(0.0, args.x_max)
+                else:
+                    ax.set_xlim(left=0.0)
+                if ax.get_ylim()[1] >= 1000:
+                    ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+                ax.yaxis.get_major_formatter().set_useOffset(False)
+
+                ax.set_xlabel("Steps")
+                ax.set_ylabel(TRANSLATIONS.get(metric, metric.capitalize()))
+                if metric == "cost" and not args.no_threshold:
+                    thr = ax.axhline(args.threshold, linestyle="--", color="red", linewidth=1.8)
+                    handles.setdefault("Threshold", thr)
+                if args.grid:
+                    ax.grid(True, linestyle="--", linewidth=0.9, alpha=0.45)
+
+    if not drew_any:
+        plt.close(fig)
+        print("No curve data, skipping learning-curve figure.")
+        return None
+
+    labels, hs = zip(*handles.items())
+    labels = [TRANSLATIONS.get(lbl, lbl) for lbl in labels]
+    fig.legend(hs, labels, loc="outside lower center",
+               ncol=legend_ncol(len(modes), len(labels)), fancybox=True, shadow=True)
+
+    out_dir = results_path(args.output_fig_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{args.out_name}_curves.pdf"
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved figure: {out_path}")
@@ -448,8 +549,11 @@ def main(args: argparse.Namespace) -> None:
             "No data loaded. Check --input/--envs/--algo/--levels/--seeds, and that the "
             "fusion runs were downloaded (python -m results.download.fusion_comparison)."
         )
-    for env in args.envs:
-        plot_env(store, args, env)
+    if not args.no_curves:
+        plot_curves(store, args)
+    if not args.no_bars:
+        for env in args.envs:
+            plot_env(store, args, env)
 
     if args.latex:
         stats = build_stats(store, args)
@@ -493,6 +597,11 @@ def build_args() -> argparse.ArgumentParser:
     p.add_argument("--last_k", type=int, default=10,
                    help="Logged points averaged to get each run's final value.")
     p.add_argument("--no_threshold", action="store_true", help="Hide safety threshold lines.")
+    p.add_argument("--x_max", type=float, default=None,
+                   help="Curves only: upper x limit (env steps); defaults to the data range.")
+    p.add_argument("--no_curves", action="store_true", help="Skip the learning-curve figure.")
+    p.add_argument("--no_bars", action="store_true",
+                   help="Skip the per-env final-performance bar figures.")
     p.add_argument("--latex", action="store_true",
                    help="Also print a Wins/Safe%% summary LaTeX table (rows = fusion modes).")
     p.add_argument("--output_latex", type=str, default=None,
