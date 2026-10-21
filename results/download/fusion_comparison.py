@@ -18,6 +18,15 @@ other. This script instead lays runs out by fusion mode:
 
 so `plotting_results.fusion_comparison` can read one folder per mode.
 
+The Push runs that add an MLP over the proprioception (`--proprio_mlp`, wandb group
+`*_mlp`) and the matching GAP runs (`--gap_lambda > 0`, group `*_gap`) have the same
+fusion mode as the originals, so they go to their own folders instead:
+
+    data/<env>/level_<l>/<algo>/fusion_<mode>_mlp/seed_<n>.parquet
+    data/<env>/level_<l>/<algo>/fusion_<mode>_gap/seed_<n>.parquet
+
+These are read by `plotting_results.gap_comparison`.
+
     python -m results.download.fusion_comparison --project my-crax-project --levels 1 2
 """
 
@@ -30,8 +39,10 @@ from wandb.apis.public import Run
 
 from results import cli
 from results.common import (
+    FUSION_VARIANTS,
     fusion_mode_dir,
     fusion_mode_of_config,
+    fusion_variant_of_config,
     get_metrics_for_env,
     results_path,
 )
@@ -40,9 +51,12 @@ from results.download.main_results import build_filters
 
 def store_fusion_run(run: Run, args: argparse.Namespace,
                      written: Optional[Set] = None) -> None:
-    """Write one run's history to its per-(mode, seed) parquet, keyed by fusion mode."""
+    """Write one run's history to its per-(mode, variant, seed) parquet."""
     config = run.config
-    mode = fusion_mode_of_config(config)
+    variant = fusion_variant_of_config(config)
+    if variant is None or variant not in args.variants:
+        return
+    mode = fusion_mode_of_config(config, variant=variant)
     if mode is None or mode not in args.fusion_modes:
         return
 
@@ -54,7 +68,7 @@ def store_fusion_run(run: Run, args: argparse.Namespace,
     metrics = get_metrics_for_env(env, args.metrics)
 
     folder_path = results_path(
-        args.output, env, f"level_{level}", algo, fusion_mode_dir(mode)
+        args.output, env, f"level_{level}", algo, fusion_mode_dir(mode, variant)
     )
     os.makedirs(folder_path, exist_ok=True)
     file_path = folder_path / f"seed_{seed}.parquet"
@@ -75,7 +89,7 @@ def store_fusion_run(run: Run, args: argparse.Namespace,
         df.to_parquet(file_path)
         if written is not None:
             written.add(file_path)
-        print(f"Saved {mode} run {run.id} to {file_path}")
+        print(f"Saved {mode} ({variant}) run {run.id} to {file_path}")
     except Exception as e:
         print(f"Error downloading data for run: {run.id}: {e}")
 
@@ -104,6 +118,10 @@ def build_args() -> argparse.ArgumentParser:
     p.add_argument("--fusion_modes", type=str, nargs="+", default=list(cli.DEFAULT_FUSION_MODES),
                    choices=cli.DEFAULT_FUSION_MODES,
                    help="Fusion modes to keep (vector, pixel, concat, sum, film).")
+    p.add_argument("--variants", type=str, nargs="+", default=list(FUSION_VARIANTS),
+                   choices=FUSION_VARIANTS,
+                   help="Policy-head variants to keep: base (original runs), mlp (proprio MLP, "
+                        "GAP off) and gap (proprio MLP, GAP on).")
     return p
 
 

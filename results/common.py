@@ -203,12 +203,41 @@ FUSION_MODE_COLORS: Dict[str, str] = {
 }
 
 
-def fusion_mode_of_config(config: dict) -> Optional[str]:
+# Policy-head variants layered on top of a pixels+state fusion mode (Push only):
+#   base -> the original fusion runs                  (no --proprio_mlp)
+#   mlp  -> extra MLP over the proprioception, GAP off (--proprio_mlp --gap_lambda 0)
+#   gap  -> same architecture as mlp with GAP on       (--proprio_mlp --gap_lambda > 0)
+# The variant only lives in the config (the run name has no suffix; the wandb group
+# ends in _mlp / _gap), so it has to be read from there. Runs using the GAP controls
+# (--gap_random_phase, --proprio_dropout) fit none of these and are skipped.
+FUSION_VARIANTS: List[str] = ["base", "mlp", "gap"]
+FUSION_VARIANT_COLORS: Dict[str, str] = {
+    "base": "#7F7F7F",  # grey
+    "mlp": "#0072B2",   # blue: GAP disabled
+    "gap": "#D55E00",   # orange: GAP enabled
+}
+
+
+def fusion_variant_of_config(config: dict) -> Optional[str]:
+    """Classify a run config into a FUSION_VARIANTS entry, or None for the GAP controls."""
+    if config.get("gap_random_phase") or (config.get("proprio_dropout") or 0.0) > 0.0:
+        return None
+    if not config.get("proprio_mlp"):
+        return "base"
+    return "gap" if (config.get("gap_lambda") or 0.0) > 0.0 else "mlp"
+
+
+def fusion_mode_of_config(config: dict, variant: Optional[str] = "base") -> Optional[str]:
     """Classify a wandb run config into a FUSION_MODES entry, or None if it fits none.
 
     Mirrors the training flags: a vector run has no `vision`; a pixels-only vision
     run is `pixel`; a pixels+state run is named by its `vision_early_fusion`.
+
+    Only runs of the given `variant` match (None accepts any), so by default the
+    proprio-MLP / GAP runs never get mixed into the original fusion comparison.
     """
+    if variant is not None and fusion_variant_of_config(config) != variant:
+        return None
     if not config.get("vision"):
         return "vector"
     obs_mode = config.get("vision_obs_mode", "pixels")
@@ -220,16 +249,19 @@ def fusion_mode_of_config(config: dict) -> Optional[str]:
     return None
 
 
-def fusion_mode_dir(mode: str) -> str:
+def fusion_mode_dir(mode: str, variant: str = "base") -> str:
     """Sub-directory a fusion mode's per-seed parquets live in.
 
     The `vector` baseline keeps the flat `<algo>/seed_<n>.parquet` layout it shares
     with the main results; every pixel-based fusion mode sits under `fusion_<mode>/`
     so the modes never collide (they all have the same env/level/algo/camera).
+    Non-base variants get their own `fusion_<mode>_<variant>/` folder.
     """
     if mode == "vector":
         return ""
-    return f"fusion_{mode}"
+    if variant == "base":
+        return f"fusion_{mode}"
+    return f"fusion_{mode}_{variant}"
 
 
 # Environments were renamed mid-project. Will be removed in the future

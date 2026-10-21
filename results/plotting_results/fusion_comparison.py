@@ -50,10 +50,10 @@ RunStore = Dict[Tuple[str, int, str, str], List[pd.DataFrame]]
 
 
 def load_runs(base: Path, env: str, level: int, algo: str, mode: str,
-              seeds: List[int], metrics: List[str]) -> RunStore:
-    """Load every seed of one (env, level, mode) cell."""
+              seeds: List[int], metrics: List[str], variant: str = "base") -> RunStore:
+    """Load every seed of one (env, level, mode) cell of the given policy-head variant."""
     out: RunStore = {}
-    folder = base / env / f"level_{level}" / algo / fusion_mode_dir(mode)
+    folder = base / env / f"level_{level}" / algo / fusion_mode_dir(mode, variant)
     for metric in metrics:
         key = (env, level, mode, metric)
         out[key] = []
@@ -192,7 +192,8 @@ def plot_curves(store: RunStore, args: argparse.Namespace) -> Optional[Path]:
     n_rows, n_cols = len(envs), len(levels) * len(metrics)
     fig = plt.figure(figsize=(args.panel_w * n_cols, args.panel_h * n_rows + 0.6),
                      layout="constrained")
-    subfigs = np.atleast_2d(fig.subfigures(n_rows, len(levels), wspace=0.04, hspace=0.04))
+    subfigs = np.asarray(fig.subfigures(n_rows, len(levels), wspace=0.04, hspace=0.04),
+                         dtype=object).reshape(n_rows, len(levels))
 
     handles: Dict[str, plt.Artist] = {}
     drew_any = False
