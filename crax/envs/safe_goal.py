@@ -1152,6 +1152,8 @@ class SafeGoal(PipelineEnv, ABC):
             gyro,  # (3,)
             magnetometer,  # (3,)
         ]
+        
+        # TODO: Add gap implementation
         if self._include_hazard_lidar:
             obs_parts.append(hazard_lidar_obs)  # (16,) - Hazard Lidar
         if self._include_goal_lidar:

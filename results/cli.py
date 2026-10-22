@@ -23,7 +23,7 @@ from __future__ import annotations
 import argparse
 from typing import Any, Iterable, List, Optional
 
-from results.common import DEFAULT_METRIC_COLS
+from results.common import DEFAULT_METRIC_COLS, FUSION_MODES
 
 # Selection defaults. Individual scripts override these where their own data
 # only covers part of the benchmark.
@@ -41,6 +41,8 @@ DEFAULT_ALGOS: List[str] = [
 DEFAULT_PLOT_ENVS: List[str] = ["safe_goal_point", "safe_reacher", "safe_push_point"]
 DEFAULT_SAFE_ALGOS: List[str] = ["ppo_lag", "ppo_pid", "p3o", "focops"]
 DEFAULT_LEVELS: List[int] = [1, 2, 3]
+# Early-fusion modes compared in the vision/proprioception study.
+DEFAULT_FUSION_MODES: List[str] = list(FUSION_MODES)
 
 # `--metrics` means two different things: wandb metric keys when downloading,
 # and the short column names of DEFAULT_METRIC_COLS when plotting.

@@ -56,6 +56,7 @@ environments log their reward under a different key, resolved by
 | `rl_param_sweep.py` | Core PPO/MJX hyperparameters (`RL_SWEEP_SPEC`: `learning_rate`, `entropy_cost`, `discounting`, `gae_lambda`, `clipping_epsilon`). |
 | `transfer_curriculum.py` | Runs tagged `TRANSFER` (unsafe PPO pre-training + safe fine-tuning) and `CURRICULUM` (levels 1→2→3, `global_step` cumulative across stages). |
 | `omnisafe.py` | OmniSafe + Safety-Gymnasium baseline runs, written as CSV with `(step, reward, cost, seed)`. |
+| `fusion_comparison.py` | Early-fusion study runs, split by how pixels and proprioception are combined: `vector` (flat `<algo>/`), and `pixel`/`concat`/`sum`/`film` under `<algo>/fusion_<mode>/`. Classifies each run from `config.vision` / `vision_obs_mode` / `vision_early_fusion`. Defaults to the Point tasks under CRPO, levels 1–2. |
 
 Shared flags come from `cli.download_parser` (see [Shared CLI](#shared-cli)):
 `--project` (required), `--envs`, `--algos`, `--levels`, `--seeds`, `--metrics`,
@@ -90,6 +91,7 @@ python -m results.download.safety_param_sweep --project my-crax-project
 | `hparam_sweep.py` | Hyperparameter sweeps (core PPO `RL_SWEEP_SPEC` and safety-specific `SAFETY_SWEEP_SPEC`): one figure per (algo, hyperparameter), a cross-algorithm comparison (`--compare_param`), sensitivity heatmaps and LaTeX tables. Narrow with `--algos` / `--hparams`, pick outputs with `--outputs`. |
 | `crax_vs_sg.py` | CRAX vs. OmniSafe + Safety-Gymnasium training curves on ant-velocity (PPOLag), mean ± 95% CI. |
 | `throughput_comparison.py` | Throughput (SPS) and scaling efficiency vs. Safety-Gymnasium, from `data/performance/`. |
+| `fusion_comparison.py` | Early-fusion techniques (vector / pixel / concat / sum / FiLM). One figure per env, Reward/Cost rows × levels as columns (Level 1 and Level 2 side by side), final-performance bars with the threshold. `--latex` also emits two LaTeX tables (rows = fusion modes), in the style of `alg_comp_bars`: a Wins/Safe% **summary** and a per-env reward/cost **appendix**. `--output_latex base.tex` writes `base_summary.tex` and `base_appendix.tex`. |
 
 Common flags come from `cli.plot_parser` (see [Shared CLI](#shared-cli)):
 `--input` (data root, default `data`), `--envs`, `--algos`, `--seeds`, `--level`,
@@ -120,6 +122,12 @@ python -m results.plotting_results.obs_comparison \
   --envs safe_goal_point safe_push_point --algos ppo_lag --level 1
 python -m results.plotting_results.obs_comparison --bars \
   --envs safe_goal_point safe_push_point --algos ppo_lag --level 1
+
+# Early-fusion comparison: download then plot (one figure per env) + Wins/Safe% table
+python -m results.download.fusion_comparison --project my-crax-project --levels 1 2
+python -m results.plotting_results.fusion_comparison \
+  --levels 1 2 --latex --output_latex figures/fusion_summary.tex \
+  --output_fig_dir results/figures
 ```
 
 `throughput_comparison.py` consumes benchmark CSVs produced by

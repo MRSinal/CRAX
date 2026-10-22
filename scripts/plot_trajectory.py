@@ -21,6 +21,12 @@ Usage:
 step directory, or either of those relative to `models/`. Vision checkpoints
 (pixel observations) are replayed with the same GPU-rendered camera, resolution
 and frame stack they were trained with, inferred from the checkpoint config.
+
+The checkpoint does not store the env kwargs (e.g. lidar/compass removed from the
+state) or the vision network options (layer norm, early-fusion technique, proprio
+MLP / GAP), so these are read from the run's WandB config: the run directory name
+is the WandB run id. The config is cached as `wandb_config.json` in the run
+directory, so later calls (or machines without WandB access) reuse it.
 """
 import argparse
 import importlib
@@ -107,14 +113,66 @@ def algorithm_from_run_name(path: Path) -> str:
     return "ppo"
 
 
-def load_policy(path: Path, module: str, deterministic: bool, vision: Optional[Dict]) -> Callable:
+_TRAINING_CONFIG_FNAME = "wandb_config.json"
+
+
+def training_config(ckpt_path: Path, project: Optional[str]) -> Dict:
+    """The run's training config: cached `wandb_config.json`, else fetched from WandB ({} if neither works)."""
+    run_dir = ckpt_path.parent if ckpt_path.name.isdigit() else ckpt_path
+    cache = run_dir / _TRAINING_CONFIG_FNAME
+    if cache.exists():
+        return json.loads(cache.read_text())
+    if not project:
+        return {}
+    try:
+        import wandb
+
+        config = dict(wandb.Api().run(f"{project}/{run_dir.name}").config)
+    except Exception as e:  # no network / run not found: fall back to the checkpoint alone
+        print(f"[warning] Could not read the WandB config of {run_dir.name}: {e}")
+        return {}
+    try:
+        cache.write_text(json.dumps(config, indent=2, default=str))
+    except OSError:
+        pass
+    return config
+
+
+def env_kwargs_from_config(config: Dict) -> Dict:
+    """Env constructor kwargs the run was trained with (the backend is chosen here, not taken from the run)."""
+    kwargs = config.get("env_kwargs") or {}
+    if isinstance(kwargs, str):
+        kwargs = json.loads(kwargs)
+    return {k: v for k, v in kwargs.items() if k != "backend"}
+
+
+def vision_network_kwargs(config: Dict) -> Dict:
+    """Network options train_env passes to make_vision_network_factory, recovered from the run config."""
+    if config.get("vision_privilege_mode", "none") not in (None, "none"):
+        raise NotImplementedError("Replaying privileged-camera checkpoints is not supported.")
     kwargs = {}
+    if "vision_layer_norm" in config:
+        kwargs["layer_norm"] = bool(config["vision_layer_norm"])
+    if config.get("vision_early_fusion"):
+        kwargs["early_fusion_technique"] = config["vision_early_fusion"]
+    if config.get("proprio_mlp"):
+        kwargs["gap_lambda"] = float(config.get("gap_lambda") or 0.0)
+    return kwargs
+
+
+def load_policy(path: Path, module: str, deterministic: bool, vision: Optional[Dict],
+                train_config: Optional[Dict] = None) -> Callable:
+    kwargs = {}
+    train_config = train_config or {}
     if vision is not None:
         from training.run_utils import make_vision_network_factory
 
         state_key = "state" if vision["obs_mode"] == "pixels+state" else ""
+        net_kwargs = vision_network_kwargs(train_config)
+        print(f"Vision network options: {net_kwargs}")
         kwargs["network_factory"] = make_vision_network_factory(
-            algorithm_from_run_name(path), policy_obs_key=state_key, value_obs_key=state_key)
+            train_config.get("alg") or algorithm_from_run_name(path),
+            policy_obs_key=state_key, value_obs_key=state_key, **net_kwargs)
     print(f"Loading policy from {path}")
     return importlib.import_module(module).load_policy(path, deterministic=deterministic, **kwargs)
 
@@ -330,8 +388,15 @@ def plot(episode: Dict, image: np.ndarray, center: np.ndarray, half: float, outp
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--checkpoint", default=None, help="Run or step directory (absolute or under models/)")
-    p.add_argument("--env", required=True, help="Environment name, e.g. safe_goal_point")
-    p.add_argument("--level", type=int, default=None, choices=[1, 2, 3], help="Difficulty level")
+    p.add_argument("--env", default=None,
+                   help="Environment name, e.g. safe_goal_point (default: from the run config)")
+    p.add_argument("--level", type=int, default=None, choices=[1, 2, 3],
+                   help="Difficulty level (default: from the run config)")
+    p.add_argument("--wandb_project", default="crax",
+                   help="WandB project holding the checkpoint's run, for its env kwargs and network options "
+                        "('' to skip)")
+    p.add_argument("--env_kwargs", type=json.loads, default=None,
+                   help="JSON env kwargs, overriding the ones from the run config")
     p.add_argument("--seed", type=int, default=0, help="Seed for the episode (sets hazard layout)")
     p.add_argument("--episode_length", type=int, default=None, help="Max steps (default: env default)")
     p.add_argument("--stochastic", action="store_true", help="Sample actions instead of using the mean")
@@ -348,29 +413,44 @@ def main() -> None:
     p.add_argument("--output", default=None, help="Output image path (default: visualizations/...)")
     args = p.parse_args()
 
-    vision = None
+    vision, train_config = None, {}
     if args.checkpoint:
         ckpt_path = resolve_checkpoint(args.checkpoint)
         module, ckpt_obs_size = read_checkpoint_config(ckpt_path)
         vision = vision_settings(ckpt_obs_size)
+        train_config = training_config(ckpt_path, args.wandb_project)
+    args.env = args.env or train_config.get("env_name")
+    if args.env is None:
+        p.error("--env is required when the run config is not available")
+    if args.level is None and train_config.get("difficulty") is not None:
+        args.level = int(train_config["difficulty"])
+    env_kwargs = args.env_kwargs if args.env_kwargs is not None else env_kwargs_from_config(train_config)
+    if env_kwargs:
+        print(f"Env kwargs: {env_kwargs}")
 
     if vision is None:
-        env = envs.get_environment(args.env, level=args.level)
+        env = envs.get_environment(args.env, level=args.level, **env_kwargs)
         episode_length = args.episode_length or getattr(unwrap(env), "episode_length", 1000)
     else:
         print(f"Vision checkpoint: {vision}")
         episode_length = args.episode_length or getattr(
-            envs.get_environment(args.env, level=args.level), "episode_length", 1000)
+            envs.get_environment(args.env, level=args.level, **env_kwargs), "episode_length", 1000)
         # GpuPixelObservationWrapper needs the MJX backend and a (here single-world) batched env.
         env = envs.create(args.env, level=args.level, episode_length=episode_length, auto_reset=False,
-                          batch_size=1, vision=True, vision_kwargs=dict(vision, num_envs=1), backend="mjx")
+                          batch_size=1, vision=True, vision_kwargs=dict(vision, num_envs=1), backend="mjx",
+                          **env_kwargs)
     base = unwrap(env)
 
     if args.checkpoint:
-        if vision is None and list(np.atleast_1d(ckpt_obs_size)) != list(np.atleast_1d(env.observation_size)):
-            raise ValueError(f"Checkpoint observation_size={ckpt_obs_size} does not match the environment's "
-                             f"{env.observation_size}; check --env and --level")
-        policy = load_policy(ckpt_path, module, deterministic=not args.stochastic, vision=vision)
+        if vision is None:
+            ckpt_state, env_state = ckpt_obs_size, env.observation_size
+        else:
+            ckpt_state, env_state = ckpt_obs_size.get("state"), env.observation_size.get("state")
+        if ckpt_state is not None and list(np.atleast_1d(ckpt_state)) != list(np.atleast_1d(env_state)):
+            raise ValueError(f"Checkpoint state size {ckpt_state} does not match the environment's {env_state}; "
+                             f"check --env, --level and --env_kwargs")
+        policy = load_policy(ckpt_path, module, deterministic=not args.stochastic, vision=vision,
+                             train_config=train_config)
         # A step directory is named after its run, so outputs from different steps don't collide.
         policy_name = (f"{ckpt_path.parent.name}_step{int(ckpt_path.name)}" if ckpt_path.name.isdigit()
                        and Path(args.checkpoint).name.isdigit() else Path(args.checkpoint).name)

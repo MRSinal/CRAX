@@ -42,6 +42,8 @@ dependencies = [
     "wandb>=0.30.0",
     "imageio>=2.38.0",
     "matplotlib>=3.10.9",
+    "pyarrow>=25.0.1",
+    "fastparquet>=2026.9.0",
 ]
 
 [project.optional-dependencies]
