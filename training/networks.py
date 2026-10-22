@@ -652,6 +652,7 @@ def make_policy_network_vision(
       activation=activation,
       kernel_init=kernel_init,
       layer_norm=layer_norm,
+      early_fusion_technique=early_fusion_technique,
       normalise_channels=normalise_channels,
       state_obs_key=state_obs_key,
       pixel_keys=None if pixel_keys is None else tuple(pixel_keys),
@@ -666,10 +667,10 @@ def make_policy_network_vision(
       obs = {**obs, state_obs_key: state_obs}
     return module.apply(policy_params, obs)
 
-    dummy_obs = {
-        key: jnp.zeros((1,) + tuple(shape)) for key, shape in observation_size.items()
-    }
-    return FeedForwardNetwork(init=lambda key: module.init(key, dummy_obs), apply=apply)
+  dummy_obs = {
+      key: jnp.zeros((1,) + tuple(shape)) for key, shape in observation_size.items()
+  }
+  return FeedForwardNetwork(init=lambda key: module.init(key, dummy_obs), apply=apply)
 
 
 def make_value_network_vision(
@@ -879,6 +880,8 @@ def _make_vision_head_network(
       layer_sizes=list(layer_sizes),
       activation=activation,
       kernel_init=kernel_init,
+      early_fusion_technique=early_fusion_technique,
+      layer_norm=layer_norm,
       state_obs_key=state_obs_key,
       gap_lambda=gap_lambda,
   )
