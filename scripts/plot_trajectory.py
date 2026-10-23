@@ -356,21 +356,28 @@ def plot(episode: Dict, image: np.ndarray, center: np.ndarray, half: float, outp
     ax.scatter(*xy[0], s=90, marker="o", facecolor="white", edgecolor="black", zorder=5, label="start")
     ax.scatter(*xy[-1], s=110, marker="X", facecolor="black", edgecolor="white", zorder=5, label="end")
 
-    # Goals, numbered in the order the agent reached them. A goal slot jumping to a new position means the
-    # old position was reached at that step; goals still pending at the end are drawn hollow, unnumbered.
+    # Goals: a thin green line follows each goal slot as it moves, with a filled circle where the agent reached
+    # it; goals still pending at the end are drawn hollow. A goal is reached when its slot respawns, i.e. jumps
+    # much further in one step than the steady drift of moving goals (goal_velocity > 0).
     goals = episode["goals"]
     # Goals that never move are scenery (e.g. the visual-only markers of the circle task): leave them to the render.
     if goals.size and np.abs(goals - goals[:1]).max() > 1e-3:
-        reached = [(t, slot) for t in range(1, len(goals)) for slot in range(goals.shape[1])
-                   if np.linalg.norm(goals[t, slot] - goals[t - 1, slot]) > 1e-3]
-        badge = dict(ha="center", va="center", fontsize=9, fontweight="bold", zorder=6)
-        for n, (t, slot) in enumerate(reached, 1):
-            ax.annotate(str(n), goals[t - 1, slot], color="white",
-                        bbox=dict(boxstyle="circle,pad=0.2", fc="#2e7d32", ec="white", lw=1), **badge)
-        for g in goals[-1]:
-            ax.annotate("  ", g, bbox=dict(boxstyle="circle,pad=0.2", fc="white", ec="#2e7d32", lw=1.5), **badge)
-        ax.plot([], [], marker="o", ls="", color="#2e7d32", label=f"goal reached, in order ({len(reached)})")
-        ax.plot([], [], marker="o", ls="", mfc="white", mec="#2e7d32", label="goal not reached")
+        goal_color = "#2e7d32"
+        step = np.linalg.norm(np.diff(goals, axis=0), axis=-1)  # (T-1, G)
+        respawned = step > max(10 * np.median(step), 1e-3)
+        reached = [(t + 1, slot) for t, slot in zip(*np.nonzero(respawned))]
+        drifts = ((step > 1e-3) & ~respawned).any()
+        for slot in range(goals.shape[1]):
+            # Break the line at respawns so it only traces how the goal drifted, not the jumps between goals.
+            path = np.insert(goals[:, slot], np.nonzero(respawned[:, slot])[0] + 1, np.nan, axis=0)
+            ax.plot(path[:, 0], path[:, 1], lw=1.0, color=goal_color, alpha=0.9, zorder=4,
+                    label="goal trajectory" if slot == 0 and drifts else None)
+        if reached:
+            reached_xy = np.array([goals[t - 1, slot] for t, slot in reached])
+            ax.scatter(reached_xy[:, 0], reached_xy[:, 1], s=220, marker="o", facecolor=goal_color,
+                       edgecolor="white", linewidth=1.5, zorder=6, label=f"goal reached ({len(reached)})")
+        ax.scatter(goals[-1, :, 0], goals[-1, :, 1], s=220, marker="o", facecolor="white", edgecolor=goal_color,
+                   linewidth=2.0, zorder=6, label="goal not reached")
         print(f"Goals reached: {len(reached)}")
 
     ax.set_xlim(extent[0], extent[1])
